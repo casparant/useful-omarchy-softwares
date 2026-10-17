@@ -33,6 +33,10 @@ jobs:
           PYCODE
       - name: Test Agent Entry
         run: python3 -m unittest discover -s plugins/agent-entry/tests -p 'test_*.py' -v
+      - name: Install Qt offscreen runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libegl1 libopengl0
       - name: Render and exercise the Agent Entry layout
         env:
           QT_QPA_PLATFORM: offscreen

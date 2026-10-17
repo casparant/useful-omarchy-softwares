@@ -10,7 +10,7 @@
 - 使用官方 `omarchy-plugin-validate` 脚本校验源码目录与独立导出目录。固定上游提交 `cce8b1c971df64a7610b818ff8819e4bea04584a`，脚本 SHA-256 为 `b6f6aba33a329a5ccd339050fbb2ce82272b791dd1f0d6a28c1837caa035b8c4`。
 - 独立导出逐字核对 **13 个白名单文件**，根目录包含 manifest、运行源码、安装器、许可证及文档；没有转换器、开发测试、缓存或运行配置。
 - 用临时虚拟环境中的 **PySide6-Essentials 6.7.3**，在 offscreen/software 后端真实渲染 `DashboardContent.qml`。终端动作、Qoder 安装说明、注册对话框、Esc、窗口缩放，以及窄窗口滚动后点击 QoderWake 说明均通过。测试不启动真实应用。
-- GitHub Actions YAML 可解析，本地 Markdown 文件链接检查通过。新增 CI 会运行插件单测、官方 manifest 校验和通用 QtQuick 渲染；本次未推送或触发远端 CI。
+- GitHub Actions YAML 可解析，本地 Markdown 文件链接检查通过。新增 CI 会运行插件单测、官方 manifest 校验和通用 QtQuick 渲染；迁移已推送到 GitHub。首轮 Linux CI 的 manifest 与插件单测通过；Qt 导入因镜像缺少 `libEGL.so.1` 失败，已在工作流补充 `libegl1` / `libopengl0`，后续以修复后的运行结果为准。
 
 ## 兼容性处理
 
