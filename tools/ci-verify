@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Install/check in an EPHEMERAL Omarchy builder container, never on the host."""
+import argparse
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from repo_lib import ROOT, NAME, read_srcinfo
+
+
+def run(*args, **kwargs):
+    return subprocess.run(args, check=True, **kwargs)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("package")
+    parser.add_argument("output", type=Path)
+    args = parser.parse_args()
+    if not Path("/.dockerenv").exists() or os.geteuid() != 0:
+        raise ValueError("run only as root inside a disposable Docker build container")
+    if not NAME.fullmatch(args.package):
+        raise ValueError("invalid package name")
+    fields = read_srcinfo(ROOT / "pkgbuilds" / args.package / ".SRCINFO")
+    packages = sorted(args.output.glob(args.package + "-*.pkg.tar.zst"))
+    if len(packages) != 1:
+        raise ValueError("expected exactly one built package, got " + str(len(packages)))
+    # Even --printsrcinfo checks that makepkg output directories are writable.
+    # Keep the mounted source read-only and redirect those paths to disposable
+    # storage owned by the unprivileged build user.
+    with tempfile.TemporaryDirectory(prefix="qoder-metadata-") as temporary:
+        run("chown", "builder:builder", temporary)
+        destinations = [name + "=" + temporary for name in
+                        ("BUILDDIR", "PKGDEST", "SRCDEST", "SRCPKGDEST", "LOGDEST")]
+        run("runuser", "-u", "builder", "--", "env", *destinations,
+            "python", str(ROOT / "tools/check-package"), args.package,
+            "--require-makepkg", cwd="/tmp")
+    run("pacman", "-U", "--noconfirm", str(packages[0]))
+    run("pacman", "-Qk", args.package)
+    native = {"qoderwake-bin": ["/opt/qoderwake/qoderwake", "/opt/qoderwake/qodercli/qodercli-wake"],
+              "qodercli-bin": ["/opt/qodercli/qodercli"],
+              "qoder-bin": ["/opt/Qoder/qoder"],
+              "qoder-ide-bin": ["/usr/share/qoder-ide/qoder-ide"]}
+    # GUI paths may vary: locate their installed main ELF via package-specific map.
+    for executable in native.get(args.package, []):
+        if not Path(executable).is_file():
+            raise ValueError("missing installed executable: " + executable)
+        result = subprocess.run(["ldd", executable], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        print(result.stdout)
+        if result.returncode or "not found" in result.stdout:
+            raise ValueError("unresolved native dependency: " + executable)
+    command = {"qoderwake-bin": "qoderwake", "qodercli-bin": "qodercli"}.get(args.package)
+    if command:
+        with tempfile.TemporaryDirectory(prefix="qoder-smoke-") as temporary:
+            root = Path(temporary)
+            root.chmod(0o755)
+            for name in ("home", "config", "work"):
+                (root / name).mkdir()
+                run("chown", "builder:builder", str(root / name))
+            # runuser resets HOME even when subprocess env= supplies a value.
+            # Set the smoke-test environment after switching users instead.
+            for flag in ("--version", "--help"):
+                result = run("runuser", "-u", "builder", "--", "env",
+                             "HOME=" + str(root / "home"), "QODER_CONFIG_DIR=" + str(root / "config"),
+                             "NO_COLOR=1", command, flag, cwd=root / "work", timeout=30,
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                if flag == "--version" and fields["pkgver"][0] not in result.stdout:
+                    raise ValueError("installed binary reports an unexpected version: " + result.stdout[:1000])
+                print("{} {}: passed".format(command, flag))
+    owned = run("pacman", "-Qlq", args.package, text=True, stdout=subprocess.PIPE)
+    # Shared directories may remain; every package-owned non-directory must go.
+    owned_files = [Path(line) for line in owned.stdout.splitlines() if line and not line.endswith("/")]
+    run("pacman", "-R", "--noconfirm", args.package)
+    result = subprocess.run(["pacman", "-Q", args.package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if result.returncode == 0:
+        raise ValueError("package remained installed after removal")
+    remaining = [str(path) for path in owned_files if os.path.lexists(path)]
+    if remaining:
+        raise ValueError("package files remained after removal: " + ", ".join(remaining[:10]))
+    scope = "install/dependencies/version/help/remove" if command else "install/dependencies/remove"
+    print("{}: {} passed; upgrade, login, services and GUI remain manual".format(args.package, scope))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, subprocess.SubprocessError) as error:
+        sys.exit("ci-verify: " + str(error))

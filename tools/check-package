@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""Check repository metadata; use makepkg too when available."""
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from repo_lib import ROOT, generated_srcinfo, load_catalog, local_sources, read_srcinfo, read_srcinfo_text, srcinfo_matches, recipe_dir, package_input, source_target
+
+
+def check(directory, require_makepkg=False):
+    recipe = package_input(directory, "PKGBUILD")
+    subprocess.run(["bash", "-n", str(recipe)], check=True)
+    fields = read_srcinfo(directory / ".SRCINFO")
+    if fields["pkgbase"] != [directory.name]:
+        raise ValueError("directory must match pkgbase")
+    if not set(fields["arch"]).issubset({"x86_64", "aarch64", "any"}):
+        raise ValueError("unsupported architecture")
+    if "any" in fields["arch"] and len(fields["arch"]) != 1:
+        raise ValueError("arch=any cannot be combined with native architectures")
+    text = recipe.read_text()
+    # Check containment before opening local files to compute their checksums.
+    local_sources(fields, directory)
+    for key in ("pkgver", "pkgrel"):
+        match = re.search(r"^" + key + r"=['\"]?([^\s'\"]+)['\"]?\s*$", text, re.M)
+        if not match or fields[key] != [match.group(1)]:
+            raise ValueError(key + " must be a constant matching .SRCINFO")
+    for key, sources in fields.items():
+        if key != "source" and not key.startswith("source_"):
+            continue
+        suffix = key[len("source"):]
+        sums = fields.get("sha256sums" + suffix, [])
+        if len(sources) != len(sums):
+            raise ValueError(key + " requires one SHA256 per source")
+        for source, checksum in zip(sources, sums):
+            if not re.fullmatch(r"[a-f0-9]{64}", checksum):
+                raise ValueError("source must have a pinned SHA256: " + source)
+            url = source_target(source)
+            if "://" in url and (not url.startswith("https://") or "latest" in url.lower()):
+                raise ValueError("use a fixed HTTPS version URL: " + source)
+            if "://" not in url:
+                path = package_input(directory, url)
+                if hashlib.sha256(path.read_bytes()).hexdigest() != checksum:
+                    raise ValueError("local checksum mismatch: " + url)
+    metadata = json.loads(package_input(directory, ".omarchy/package.json").read_text())
+    if metadata.get("source") != "local":
+        raise ValueError("local recipe metadata must declare source=local")
+    if metadata.get("sync") is not False and not metadata.get("upstream"):
+        raise ValueError("declare upstream updates or an explicit manual sync hold")
+    for parent, subdirectories, names in os.walk(directory, followlinks=False):
+        if Path(parent) == directory:
+            # makepkg outputs and checkout internals are not recipe inputs.
+            excluded = {"src", "pkg", ".git"}
+            subdirectories[:] = [name for name in subdirectories if name not in excluded]
+            names = [name for name in names if name not in excluded]
+        for name in names:
+            path = Path(parent) / name
+            if not path.is_file():
+                continue
+            path = package_input(directory, str(path.relative_to(directory)))
+            with path.open("rb") as handle:
+                header = handle.readline(128)
+            shell = re.match(rb"#!.*\b(?:bash|sh)(?:\s|$)", header)
+            if shell or path.suffix in {".sh", ".install"} or path.name == "PKGBUILD":
+                subprocess.run(["bash", "-n", str(path)], check=True)
+    if shutil.which("makepkg"):
+        generated = generated_srcinfo(directory)
+        if not srcinfo_matches(generated, (directory / ".SRCINFO").read_text()):
+            raise ValueError(".SRCINFO differs from makepkg --printsrcinfo; regenerate on Arch")
+        detail = "makepkg metadata matched"
+    elif require_makepkg:
+        raise ValueError("makepkg required for this check; run on Arch Linux")
+    else:
+        detail = "static checks only; makepkg unavailable"
+    return fields, detail
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("packages", nargs="*")
+    parser.add_argument("--require-makepkg", action="store_true")
+    args = parser.parse_args()
+    catalog = load_catalog()
+    software = catalog["software"]
+    ids = [item["id"] for item in software]
+    if len(ids) != len(set(ids)):
+        raise ValueError("duplicate catalog id")
+    names = args.packages or sorted(path.name for path in (ROOT / "pkgbuilds").iterdir() if path.is_dir())
+    if not names:
+        raise ValueError("no recipes found")
+    for name in names:
+        directory = recipe_dir(name)
+        fields, detail = check(directory, args.require_makepkg)
+        entries = [item for item in software if item.get("recipe") == "pkgbuilds/" + name]
+        if len(entries) != 1:
+            raise ValueError(name + ": expected exactly one catalog entry")
+        entry = entries[0]
+        if set(entry["architectures"]) != set(fields["arch"]):
+            raise ValueError(name + ": catalog architectures differ from .SRCINFO")
+        print("{}: OK ({})".format(name, detail))
+    for item in software:
+        if item.get("recipe") and not (ROOT / item["recipe"] / "PKGBUILD").is_file():
+            raise ValueError("missing catalog recipe: " + item["id"])
+        if not (ROOT / item["documentation"]).is_file():
+            raise ValueError("missing software documentation: " + item["id"])
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, KeyError, subprocess.CalledProcessError) as error:
+        sys.exit("check-package: " + str(error))

@@ -1,0 +1,100 @@
+name: Build on native Linux architectures
+
+on:
+  push:
+    paths: ['pkgbuilds/**', 'tools/**', 'catalog.json', '.github/workflows/build.yml']
+  pull_request:
+    paths: ['pkgbuilds/**', 'tools/**', 'catalog.json', '.github/workflows/build.yml']
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Optional pkgbase; leave empty to build every recipe'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: plan
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          tools/check-package
+          matrix="$(tools/build-matrix "$PACKAGE")"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    env:
+      PACKAGE: ${{ matrix.package }}
+      ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+          persist-credentials: false
+      - name: Check out official Omarchy builder at a reviewed revision
+        uses: actions/checkout@v4
+        with:
+          repository: omacom/omarchy-pkgs
+          ref: 29c89f78d85e1c9330a1bc1614c04daecb219cc3
+          path: builder
+          persist-credentials: false
+      - name: Stage the local recipe
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          from pathlib import Path
+          package = os.environ['PACKAGE']
+          target = Path('builder/pkgbuilds') / package
+          if target.exists():
+              shutil.rmtree(target)
+          shutil.copytree(Path('source/pkgbuilds') / package, target)
+          PY
+      - name: Build with the official Arch or Arch Linux ARM environment
+        working-directory: builder
+        run: |
+          test "$(uname -m)" = "$ARCH"
+          OMARCHY_PUBLISHED_REPO_URL= bin/build --package "$PACKAGE" --arch "$ARCH"
+      - name: Verify metadata, install, dependencies and removal
+        run: |
+          docker run --rm --user root \
+            -v "$GITHUB_WORKSPACE:/repo:ro" \
+            "omarchy-pkg-builder:latest-$ARCH-edge" \
+            /bin/bash -euc '
+              # The official builder has base-devel, but does not include Python.
+              # Recreate its removed local signing key before a full system update.
+              pacman-key --init
+              pacman -Syu --noconfirm
+              pacman -S --needed --noconfirm python
+              exec python /repo/source/tools/ci-verify "$1" "$2"
+            ' -- "$PACKAGE" "/repo/builder/build-output/edge/$ARCH"
+      - name: Record verification scope
+        if: always()
+        run: |
+          {
+            echo "### $PACKAGE / $ARCH"
+            echo "Result: ${{ job.status }}"
+            echo "Builder: omacom/omarchy-pkgs at 29c89f78d85e1c9330a1bc1614c04daecb219cc3"
+            echo "Scope: makepkg, SRCINFO, install, ELF dependencies, CLI version/help when applicable, remove."
+            echo "Pending manual checks: upgrade, authentication, Wake service/portal, GUI and Omarchy desktop behavior."
+            echo "No proprietary binary artifacts are uploaded."
+          } >> "$GITHUB_STEP_SUMMARY"

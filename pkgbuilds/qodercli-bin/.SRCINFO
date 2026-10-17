@@ -1,0 +1,32 @@
+pkgbase = qodercli-bin
+	pkgdesc = Qoder CLI native executable, packaged for pacman
+	pkgver = 1.1.73
+	pkgrel = 1
+	url = https://qoder.com/cli
+	arch = x86_64
+	arch = aarch64
+	license = LicenseRef-Qoder
+	depends = bash
+	depends_x86_64 = glibc>=2.28
+	depends_aarch64 = glibc>=2.34
+	optdepends = git: work with Git repositories
+	optdepends = ripgrep: fast project search
+	optdepends = xdg-utils: open browser sign-in links
+	provides = qodercli
+	provides = qoderclibin
+	conflicts = qodercli
+	conflicts = qoder-cli
+	options = !strip
+	options = !debug
+	source = qodercli.sh
+	source = pacman-settings.json
+	source = LICENSE
+	source_x86_64 = qodercli-1.1.73-x86_64.tar.gz::https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.73/qodercli-linux-x64-baseline.tar.gz
+	source_aarch64 = qodercli-1.1.73-aarch64.tar.gz::https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.73/qodercli-linux-arm64.tar.gz
+	sha256sums = 34636a364e687efbcf15e8db0982af80eb529a0fed40b8686098f69d4e5ba132
+	sha256sums = 6a813a4a219dc135b96f50290e3b4e785577f9d9cd6174039eeb3d4618cfd180
+	sha256sums = 4a39646e58dcdc264e38863fdb2969aef0f5e8fa667df02b1011bc9f68d8bf61
+	sha256sums_x86_64 = b8f5cddaa851c1847c8575e696e567703bf06c86cd736853cc65714580d4cbab
+	sha256sums_aarch64 = aed01a40653c116bfd9a0bbf10e1c015e7fd7d2697512afe69d501e235aa6402
+
+pkgname = qodercli-bin

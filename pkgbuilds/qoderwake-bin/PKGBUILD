@@ -1,0 +1,36 @@
+# Maintainer: casparant
+pkgname=qoderwake-bin
+pkgver=1.1.12
+pkgrel=1
+pkgdesc='QoderWake personal AI agent runtime with its matching private Qoder CLI'
+arch=('x86_64' 'aarch64')
+url='https://qoder.com/'
+license=('LicenseRef-Qoder-Proprietary')
+depends=('bash' 'python')
+depends_x86_64=('glibc>=2.28')
+depends_aarch64=('glibc>=2.34')
+optdepends=('git: version control in agent workspaces'
+            'xdg-utils: open browser login and the local portal')
+provides=('qoderwake')
+conflicts=('qoderwake')
+# Bun executables contain appended application data. Never strip/rewrite them.
+options=('!strip' '!debug')
+source=('qoderwake-launcher' 'qoderwake.service' 'LICENSE.upstream')
+source_x86_64=("https://download.qoder.com/qoderwake/releases/${pkgver}/qoderwake_${pkgver}_linux_amd64.tar.gz")
+source_aarch64=("https://download.qoder.com/qoderwake/releases/${pkgver}/qoderwake_${pkgver}_linux_arm64.tar.gz")
+sha256sums=('5b43c815e2e9d3e2dac248506f1e8bf675e775bca4ce7fedb7336426e2f4d213' 'beded30edf97880aa3a8c26d26b64fd5330047b7a2662deb738d87b4a2daddc2' '498c9265fe413e9bfb10a1abb0923f040dc60fb8f542e3f470a778c8949ea792')
+sha256sums_x86_64=('30416efe98cba69a89f99f3cddca07756074ba7bd797344d00d6af6f33f3ec1d')
+sha256sums_aarch64=('19c4c9bdd82cfb249806424b1278de9d93e49cc4d36839b9f9eba9730941e159')
+
+package() {
+  # Preserve the vendor layout: Wake resolves resources relative to its binary.
+  install -d "$pkgdir/opt/qoderwake/qodercli" "$pkgdir/usr/bin" \
+    "$pkgdir/usr/lib/systemd/user" "$pkgdir/usr/share/licenses/$pkgname"
+  install -m755 "$srcdir/qoderwake" "$pkgdir/opt/qoderwake/qoderwake"
+  install -m755 "$srcdir/qodercli/qodercli-wake" \
+    "$pkgdir/opt/qoderwake/qodercli/qodercli-wake"
+  cp -a "$srcdir/resources" "$pkgdir/opt/qoderwake/"
+  install -m755 "$srcdir/qoderwake-launcher" "$pkgdir/usr/bin/qoderwake"
+  install -m644 "$srcdir/qoderwake.service" "$pkgdir/usr/lib/systemd/user/qoderwake.service"
+  install -m644 "$srcdir/LICENSE.upstream" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.upstream"
+}

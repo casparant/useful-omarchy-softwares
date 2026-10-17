@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""Export reviewed sources into a NEW directory; never push to AUR."""
+import argparse
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from repo_lib import generated_srcinfo, local_sources, read_srcinfo, read_srcinfo_text, srcinfo_matches, recipe_dir, package_input
+
+
+def export(directory, destination):
+    # Refuse existing paths before invoking makepkg, including dangling links.
+    if destination.exists() or destination.is_symlink():
+        raise ValueError("destination already exists: " + str(destination))
+    package_input(directory, "PKGBUILD")
+    fields = read_srcinfo(directory / ".SRCINFO")
+    files = sorted(set(["PKGBUILD", ".SRCINFO"] + local_sources(fields, directory)))
+    if "x86_64" not in fields["arch"] and fields["arch"] != ["any"]:
+        raise ValueError("AUR packages must support x86_64")
+    if not shutil.which("makepkg"):
+        raise ValueError("makepkg required; regenerate and compare .SRCINFO on Arch before exporting")
+    generated = generated_srcinfo(directory)
+    if not srcinfo_matches(generated, (directory / ".SRCINFO").read_text()):
+        raise ValueError("stale .SRCINFO; run makepkg --printsrcinfo > .SRCINFO on Arch")
+    # Never overwrite an AUR clone or a previous export, even an empty directory.
+    destination.mkdir(parents=True, exist_ok=False)
+    try:
+        for name in files:
+            target = destination / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(directory / name, target)
+    except Exception:
+        shutil.rmtree(destination)
+        raise
+    print("Exported {} files to {}. Review existing AUR ownership before publishing.".format(len(files), destination))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("package")
+    parser.add_argument("destination", type=Path)
+    args = parser.parse_args()
+    export(recipe_dir(args.package), args.destination.expanduser().absolute())
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        sys.exit("export-aur: " + str(error))

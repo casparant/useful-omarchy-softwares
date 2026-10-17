@@ -1,0 +1,12 @@
+QoderWake and its bundled Qoder CLI are proprietary upstream software.
+
+Upstream terms: https://qoder.com/product-service
+Official distribution manifest:
+https://download.qoder.com/qoderwake/channels/manifest.json
+
+The QoderWake 1.1.12 Linux archives inspected on 2026-10-17 did not include
+a standalone LICENSE or EULA file. This notice records the upstream terms
+reference; it does not replace those terms or grant redistribution rights.
+The repository distributes a packaging recipe, not the vendor binaries.
+Confirm the applicable license and binary redistribution permission before
+publishing built packages to a public repository or release.

@@ -1,0 +1,30 @@
+pkgbase = qoderwake-bin
+	pkgdesc = QoderWake personal AI agent runtime with its matching private Qoder CLI
+	pkgver = 1.1.12
+	pkgrel = 1
+	url = https://qoder.com/
+	arch = x86_64
+	arch = aarch64
+	license = LicenseRef-Qoder-Proprietary
+	depends = bash
+	depends = python
+	optdepends = git: version control in agent workspaces
+	optdepends = xdg-utils: open browser login and the local portal
+	provides = qoderwake
+	conflicts = qoderwake
+	options = !strip
+	options = !debug
+	source = qoderwake-launcher
+	source = qoderwake.service
+	source = LICENSE.upstream
+	sha256sums = 5b43c815e2e9d3e2dac248506f1e8bf675e775bca4ce7fedb7336426e2f4d213
+	sha256sums = beded30edf97880aa3a8c26d26b64fd5330047b7a2662deb738d87b4a2daddc2
+	sha256sums = 498c9265fe413e9bfb10a1abb0923f040dc60fb8f542e3f470a778c8949ea792
+	depends_x86_64 = glibc>=2.28
+	source_x86_64 = https://download.qoder.com/qoderwake/releases/1.1.12/qoderwake_1.1.12_linux_amd64.tar.gz
+	sha256sums_x86_64 = 30416efe98cba69a89f99f3cddca07756074ba7bd797344d00d6af6f33f3ec1d
+	depends_aarch64 = glibc>=2.34
+	source_aarch64 = https://download.qoder.com/qoderwake/releases/1.1.12/qoderwake_1.1.12_linux_arm64.tar.gz
+	sha256sums_aarch64 = 19c4c9bdd82cfb249806424b1278de9d93e49cc4d36839b9f9eba9730941e159
+
+pkgname = qoderwake-bin

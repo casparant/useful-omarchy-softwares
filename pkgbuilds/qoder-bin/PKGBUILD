@@ -1,0 +1,51 @@
+# Local candidate for the existing AUR package; contribute fixes there.
+pkgname=qoder-bin
+pkgver=0.4.8
+pkgrel=1
+_debepoch=1
+pkgdesc='Qoder desktop agent workbench, official bundled runtime'
+arch=('x86_64')
+url='https://qoder.com'
+license=('LicenseRef-Qoder')
+depends=('alsa-lib' 'at-spi2-core' 'bash' 'cairo' 'dbus' 'expat' 'gcc-libs'
+         'desktop-file-utils' 'glib2' 'glibc' 'gtk3' 'hicolor-icon-theme' 'libcups' 'libx11' 'libxcb' 'libxcomposite'
+         'libxdamage' 'libxext' 'libxfixes' 'libxkbcommon' 'libxrandr'
+         'mesa' 'nspr' 'nss' 'pango' 'shared-mime-info' 'systemd-libs' 'xdg-utils' 'libnotify' 'libsecret' 'libxss' 'libxtst' 'util-linux-libs')
+makedepends=('binutils')
+optdepends=('libayatana-appindicator: system tray integration'
+            'xdg-desktop-portal: desktop integration on Wayland')
+provides=('qoder')
+conflicts=('qoder')
+# Keep the vendor Electron/Chromium runtime and application resources intact.
+options=('!strip' '!debug')
+source=('LICENSE.upstream')
+source_x86_64=("${pkgname}-${pkgver}-x86_64.deb::https://download.qoder.com/qoder-app/releases/${pkgver}/Qoder-linux-amd64.deb")
+sha256sums=('7e34887c2a0b75baf41c64263de250ad8b583bf5592b5c3e6639eb1a345e0743')
+sha256sums_x86_64=('1e47b4de4d8c47235d52ada8a865630c2d4e193571062924cbe48c69719ac88d')
+
+prepare() {
+  local control
+  control=$(bsdtar -xOf "$srcdir/control.tar.xz" ./control) || return 1
+  printf '%s\n' "$control" | grep -Fx 'Package: qoder' || return 1
+  printf '%s\n' "$control" | grep -Fx "Version: ${_debepoch}:${pkgver}" || return 1
+  printf '%s\n' "$control" | grep -Fx 'Architecture: amd64' || return 1
+}
+
+package() {
+  # Extract only the data payload. Never run the vendor's Debian maintainer hooks.
+  bsdtar --no-same-owner -xpf "$srcdir/data.tar.xz" -C "$pkgdir" || return 1
+  local machine
+  machine=$(LC_ALL=C readelf -h "$pkgdir/opt/Qoder/qoder" | sed -n 's/^ *Machine: *//p')
+  [[ "$CARCH:$machine" == 'x86_64:Advanced Micro Devices X86-64' ]] || {
+    error "Expected an x86_64 executable; archive contains $machine"
+    return 1
+  }
+  install -Dm644 "$srcdir/LICENSE.upstream" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -d "$pkgdir/usr/bin"
+  ln -s /opt/Qoder/qoder "$pkgdir/usr/bin/qoder"
+  ln -s /opt/Qoder/qoder "$pkgdir/usr/bin/qoder-desktop"
+  # User namespaces provide the sandbox on the target system; do not disable it.
+  chmod 755 "$pkgdir/opt/Qoder/chrome-sandbox"
+  ln -s /opt/Qoder/LICENSE.electron.txt "$pkgdir/usr/share/licenses/$pkgname/LICENSE.electron.txt"
+  ln -s /opt/Qoder/LICENSES.chromium.html "$pkgdir/usr/share/licenses/$pkgname/LICENSES.chromium.html"
+}

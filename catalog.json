@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "researched_on": "2026-10-17",
+  "software": [
+    {
+      "id": "qoderwake",
+      "name": "QoderWake",
+      "homepage": "https://docs.qoder.com/qoderwake/installation",
+      "architectures": [
+        "x86_64",
+        "aarch64"
+      ],
+      "recipe": "pkgbuilds/qoderwake-bin",
+      "documentation": "pkgbuilds/qoderwake-bin/README.md",
+      "status": "recipe-candidate",
+      "aur": null,
+      "omarchy": null,
+      "maintenance": "local; first package, upstream submission after Linux validation",
+      "verification": {
+        "source_checksums": "passed-both-architectures",
+        "elf_architecture": "passed-both-architectures",
+        "package_staging": "passed-on-macos-both-architectures",
+        "linux_build": "pending",
+        "lifecycle": "pending",
+        "omarchy_runtime": "pending"
+      },
+      "release_feed": {
+        "url": "https://download.qoder.com/qoderwake/channels/manifest.json",
+        "version_path": "latest",
+        "files_path": "files",
+        "architectures": {
+          "x86_64": "amd64",
+          "aarch64": "arm64"
+        },
+        "bundled_cli_path": "qodercli.version"
+      },
+      "binary_redistribution": "unconfirmed; recipes only"
+    },
+    {
+      "id": "qodercli",
+      "name": "Qoder CLI",
+      "homepage": "https://docs.qoder.com/cli/installation",
+      "architectures": [
+        "x86_64",
+        "aarch64"
+      ],
+      "recipe": "pkgbuilds/qodercli-bin",
+      "documentation": "pkgbuilds/qodercli-bin/README.md",
+      "status": "recipe-candidate",
+      "aur": "https://aur.archlinux.org/packages/qodercli-bin",
+      "omarchy": null,
+      "maintenance": "local candidate; propose fixes to the existing AUR maintainer, do not create a duplicate package",
+      "verification": {
+        "source_checksums": "passed-both-architectures",
+        "elf_architecture": "passed-both-architectures",
+        "package_staging": "passed-on-macos-with-compatibility-adapters",
+        "linux_build": "pending",
+        "lifecycle": "pending",
+        "omarchy_runtime": "pending"
+      },
+      "release_feed": {
+        "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/channels/manifest.json",
+        "version_path": "latest",
+        "files_path": "files",
+        "architectures": {
+          "x86_64": "amd64-baseline",
+          "aarch64": "arm64"
+        }
+      },
+      "binary_redistribution": "unconfirmed; recipes only"
+    },
+    {
+      "id": "qoder",
+      "name": "Qoder Desktop",
+      "homepage": "https://qoder.com/download",
+      "architectures": [
+        "x86_64"
+      ],
+      "recipe": "pkgbuilds/qoder-bin",
+      "documentation": "pkgbuilds/qoder-bin/README.md",
+      "status": "recipe-candidate",
+      "aur": "https://aur.archlinux.org/packages/qoder-bin",
+      "omarchy": null,
+      "maintenance": "local candidate; coordinate with existing AUR maintainer",
+      "verification": {
+        "source_checksums": "passed-x86_64",
+        "elf_architecture": "passed-x86_64",
+        "package_staging": "passed-on-macos-with-compatibility-adapters",
+        "linux_build": "pending",
+        "lifecycle": "pending",
+        "omarchy_runtime": "pending"
+      },
+      "binary_redistribution": "unconfirmed; recipes only"
+    },
+    {
+      "id": "qoder-ide",
+      "name": "Qoder IDE",
+      "homepage": "https://qoder.com/download",
+      "architectures": [
+        "x86_64"
+      ],
+      "recipe": "pkgbuilds/qoder-ide-bin",
+      "documentation": "pkgbuilds/qoder-ide-bin/README.md",
+      "status": "recipe-candidate",
+      "aur": "https://aur.archlinux.org/packages/qoder-ide-bin",
+      "omarchy": null,
+      "maintenance": "local candidate; coordinate with existing AUR maintainer",
+      "verification": {
+        "source_checksums": "passed-x86_64",
+        "elf_architecture": "passed-x86_64",
+        "package_staging": "passed-on-macos-with-compatibility-adapters",
+        "linux_build": "pending",
+        "lifecycle": "pending",
+        "omarchy_runtime": "pending"
+      },
+      "binary_redistribution": "unconfirmed; recipes only"
+    },
+    {
+      "id": "dingtalk",
+      "name": "钉钉",
+      "homepage": "https://www.dingtalk.com/",
+      "architectures": [
+        "x86_64",
+        "aarch64"
+      ],
+      "recipe": null,
+      "documentation": "docs/software/dingtalk.md",
+      "status": "upstream-available",
+      "aur": "https://aur.archlinux.org/packages/dingtalk-bin",
+      "omarchy": "https://github.com/omacom/omarchy-pkgs/tree/master/pkgbuilds/dingtalk-bin",
+      "maintenance": "reuse Omarchy's existing recipe; no duplicate local package",
+      "verification": {
+        "architecture_evidence": "declared-by-upstream-omarchy-recipe",
+        "channel_availability": "check-on-target-system",
+        "omarchy_runtime": "pending"
+      },
+      "binary_redistribution": "not-evaluated; no local binary distribution"
+    }
+  ]
+}

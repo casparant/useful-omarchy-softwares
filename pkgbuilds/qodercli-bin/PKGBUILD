@@ -1,0 +1,40 @@
+# Maintained locally as a reviewable candidate for the existing AUR package.
+# Do not submit a second qodercli-bin package to AUR.
+pkgname=qodercli-bin
+pkgver=1.1.73
+pkgrel=1
+pkgdesc='Qoder CLI native executable, packaged for pacman'
+arch=('x86_64' 'aarch64')
+url='https://qoder.com/cli'
+license=('LicenseRef-Qoder')
+depends=('bash')
+depends_x86_64=('glibc>=2.28')
+depends_aarch64=('glibc>=2.34')
+optdepends=('git: work with Git repositories'
+            'ripgrep: fast project search'
+            'xdg-utils: open browser sign-in links')
+provides=('qodercli' 'qoderclibin')
+conflicts=('qodercli' 'qoder-cli')
+# The Bun executable contains appended application data; stripping can break it.
+options=('!strip' '!debug')
+source=('qodercli.sh' 'pacman-settings.json' 'LICENSE')
+# Use the vendor's baseline x64 build rather than assuming AVX2 support.
+source_x86_64=("qodercli-${pkgver}-x86_64.tar.gz::https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/${pkgver}/qodercli-linux-x64-baseline.tar.gz")
+source_aarch64=("qodercli-${pkgver}-aarch64.tar.gz::https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/${pkgver}/qodercli-linux-arm64.tar.gz")
+sha256sums=('34636a364e687efbcf15e8db0982af80eb529a0fed40b8686098f69d4e5ba132' '6a813a4a219dc135b96f50290e3b4e785577f9d9cd6174039eeb3d4618cfd180' '4a39646e58dcdc264e38863fdb2969aef0f5e8fa667df02b1011bc9f68d8bf61')
+sha256sums_x86_64=('b8f5cddaa851c1847c8575e696e567703bf06c86cd736853cc65714580d4cbab')
+sha256sums_aarch64=('aed01a40653c116bfd9a0bbf10e1c015e7fd7d2697512afe69d501e235aa6402')
+
+package() {
+  local machine
+  machine=$(LC_ALL=C readelf -h "$srcdir/qodercli" | sed -n 's/^ *Machine: *//p')
+  case "$CARCH:$machine" in
+    'x86_64:Advanced Micro Devices X86-64' | 'aarch64:AArch64') ;;
+    *) error "Expected a $CARCH executable; archive contains $machine"; return 1 ;;
+  esac
+
+  install -Dm755 "$srcdir/qodercli" "$pkgdir/opt/qodercli/qodercli"
+  install -Dm755 "$srcdir/qodercli.sh" "$pkgdir/usr/bin/qodercli"
+  install -Dm644 "$srcdir/pacman-settings.json" "$pkgdir/usr/share/qodercli/pacman-settings.json"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

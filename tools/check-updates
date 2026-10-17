@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+"""Read upstream JSON manifests without changing recipes or downloading binaries."""
+import argparse
+import json
+import re
+import sys
+import urllib.request
+from repo_lib import load_catalog, nested, read_srcinfo, ROOT, source_target
+
+
+def inspect(item, manifest):
+    feed = item["release_feed"]
+    version = nested(manifest, feed["version_path"])
+    if not isinstance(version, str) or not version or any(c.isspace() for c in version):
+        raise ValueError(item["id"] + ": invalid upstream version")
+    fields = read_srcinfo(ROOT / item["recipe"] / ".SRCINFO")
+    current = fields["pkgver"][0]
+    files = nested(manifest, feed["files_path"])
+    if set(feed["architectures"]) != set(fields["arch"]):
+        raise ValueError(item["id"] + ": release feed architectures differ from recipe")
+    if not isinstance(files, list) or not all(isinstance(entry, dict) for entry in files):
+        raise ValueError(item["id"] + ": artifact list must contain objects")
+    for arch, upstream_arch in feed["architectures"].items():
+        candidates = [f for f in files if f.get("os") == "linux" and f.get("arch") == upstream_arch]
+        if len(candidates) != 1:
+            raise ValueError("{}: expected one Linux {} artifact".format(item["id"], upstream_arch))
+        artifact = candidates[0]
+        checksum, url = artifact["sha256"], artifact["url"]
+        if not isinstance(checksum, str) or not re.fullmatch(r"[a-f0-9]{64}", checksum):
+            raise ValueError(item["id"] + ": invalid artifact SHA256 for " + arch)
+        if not isinstance(url, str) or not url.startswith("https://"):
+            raise ValueError(item["id"] + ": artifact must use HTTPS for " + arch)
+        if version == current:
+            checksums = fields.get("sha256sums_" + arch, [])
+            urls = [source_target(s) for s in fields.get("source_" + arch, [])]
+            if len(urls) != len(checksums):
+                raise ValueError(item["id"] + ": recipe source/checksum count differs for " + arch)
+            pinned = dict(zip(urls, checksums))
+            if url not in pinned:
+                raise ValueError("{}: pinned artifact URL differs for {}".format(item["id"], arch))
+            if checksum != pinned[url]:
+                raise ValueError("{}: upstream checksum changed for {} {}".format(item["id"], current, arch))
+    status = "current" if version == current else "review-update"
+    result = {"package": fields["pkgbase"][0], "current": current, "upstream": version, "status": status}
+    if feed.get("bundled_cli_path"):
+        result["bundled_cli"] = str(nested(manifest, feed["bundled_cli_path"]))
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("packages", nargs="*")
+    args = parser.parse_args()
+    selected = []
+    for item in load_catalog()["software"]:
+        name = (item.get("recipe") or "").rsplit("/", 1)[-1]
+        if args.packages and name not in args.packages and item["id"] not in args.packages:
+            continue
+        if item.get("release_feed") and item.get("recipe"):
+            selected.append(item)
+        elif args.packages:
+            print(json.dumps({"package": item["id"], "status": "manual", "reason": "no JSON feed configured"}))
+    known = {item["id"] for item in load_catalog()["software"]} | {(item.get("recipe") or "").rsplit("/", 1)[-1] for item in load_catalog()["software"]}
+    if set(args.packages) - known:
+        raise ValueError("unknown package: " + ", ".join(sorted(set(args.packages) - known)))
+    for item in selected:
+        request = urllib.request.Request(item["release_feed"]["url"], headers={"User-Agent": "useful-omarchy-softwares/1"})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            manifest = json.load(response)
+        print(json.dumps(inspect(item, manifest), ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, KeyError) as error:
+        sys.exit("check-updates: " + str(error))

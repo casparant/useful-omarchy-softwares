@@ -1,0 +1,10 @@
+{
+  "source": "local",
+  "sync": false,
+  "upstream": {
+    "watch": {
+      "json": "https://download.qoder.com/qoderwake/channels/manifest.json",
+      "path": "latest"
+    }
+  }
+}

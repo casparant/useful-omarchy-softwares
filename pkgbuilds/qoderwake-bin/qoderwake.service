@@ -1,0 +1,12 @@
+[Unit]
+Description=QoderWake user daemon
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/qoderwake start --foreground --host 127.0.0.1 --port 19820
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+
+[Install]
+WantedBy=default.target

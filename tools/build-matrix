@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""Emit native GitHub runner jobs for every architecture actually in a recipe."""
+import argparse
+import json
+import sys
+from repo_lib import ROOT, read_srcinfo, recipe_dir
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("package", nargs="?", default="")
+    args = parser.parse_args()
+    names = [args.package] if args.package else sorted(p.name for p in (ROOT / "pkgbuilds").iterdir() if p.is_dir())
+    runners = {"x86_64": "ubuntu-24.04", "aarch64": "ubuntu-24.04-arm"}
+    jobs = []
+    for name in names:
+        fields = read_srcinfo(recipe_dir(name) / ".SRCINFO")
+        for arch in fields["arch"]:
+            # Architecture-independent packages need only one build.
+            target = "x86_64" if arch == "any" else arch
+            if target not in runners:
+                raise ValueError("unsupported architecture: " + arch)
+            jobs.append({"package": name, "arch": target, "runner": runners[target]})
+    print(json.dumps({"include": jobs}, separators=(",", ":")))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError) as error:
+        sys.exit("build-matrix: " + str(error))

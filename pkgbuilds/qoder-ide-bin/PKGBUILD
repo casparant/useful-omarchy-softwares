@@ -1,0 +1,54 @@
+# Local candidate for the existing AUR package; contribute fixes there.
+pkgname=qoder-ide-bin
+pkgver=1.33.0
+pkgrel=1
+_debbuild=1791815607
+pkgdesc='Qoder IDE, official bundled runtime'
+arch=('x86_64')
+url='https://qoder.com'
+license=('LicenseRef-Qoder')
+depends=('alsa-lib' 'at-spi2-core' 'bash' 'cairo' 'dbus' 'expat' 'gcc-libs'
+         'desktop-file-utils' 'glib2' 'glibc' 'gtk3' 'hicolor-icon-theme' 'libcups' 'libx11' 'libxcb' 'libxcomposite'
+         'libxdamage' 'libxext' 'libxfixes' 'libxkbcommon' 'libxrandr'
+         'mesa' 'nspr' 'nss' 'pango' 'shared-mime-info' 'systemd-libs' 'xdg-utils' 'ca-certificates' 'curl' 'libxkbfile' 'which')
+makedepends=('binutils')
+optdepends=('vulkan-icd-loader: Vulkan support'
+            'xdg-desktop-portal: desktop integration on Wayland')
+provides=('qoder-ide')
+conflicts=('qoder-ide')
+# Keep the vendor Electron/Chromium runtime and application resources intact.
+options=('!strip' '!debug')
+source=('LICENSE.upstream')
+source_x86_64=("${pkgname}-${pkgver}-x86_64.deb::https://download.qoder.com/release/${pkgver}/qoder-ide_amd64.deb")
+sha256sums=('0feb7c1ead1af0c51881fda18b1031b240e7870ea77d8a3d7837e7e1baa031d0')
+sha256sums_x86_64=('193582f86ddbd77f615ecffb160d5ba13667d6c354b12ce706e2634e7043154e')
+
+prepare() {
+  local control
+  control=$(bsdtar -xOf "$srcdir/control.tar.xz" ./control) || return 1
+  printf '%s\n' "$control" | grep -Fx 'Package: qoder-ide' || return 1
+  printf '%s\n' "$control" | grep -Fx "Version: ${pkgver}-${_debbuild}" || return 1
+  printf '%s\n' "$control" | grep -Fx 'Architecture: amd64' || return 1
+}
+
+package() {
+  # Extract only the data payload. Never run the vendor's Debian maintainer hooks.
+  bsdtar --no-same-owner -xpf "$srcdir/data.tar.xz" -C "$pkgdir" || return 1
+  local machine
+  machine=$(LC_ALL=C readelf -h "$pkgdir/usr/share/qoder-ide/qoder-ide" | sed -n 's/^ *Machine: *//p')
+  [[ "$CARCH:$machine" == 'x86_64:Advanced Micro Devices X86-64' ]] || {
+    error "Expected an x86_64 executable; archive contains $machine"
+    return 1
+  }
+  install -Dm644 "$srcdir/LICENSE.upstream" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -d "$pkgdir/usr/bin"
+  # bin/qoder may dispatch through ~/.qoder/entry/qoder to another product.
+  # Use the vendor's direct IDE launcher for this explicit command instead.
+  ln -s /usr/share/qoder-ide/bin/code "$pkgdir/usr/bin/qoder-ide"
+  # Do not install IDE completions for the desktop product's qoder command.
+  rm -f "$pkgdir/usr/share/bash-completion/completions/qoder"
+  rm -f "$pkgdir/usr/share/zsh/vendor-completions/_qoder"
+  chmod 755 "$pkgdir/usr/share/qoder-ide/chrome-sandbox"
+  ln -s /usr/share/qoder-ide/LICENSES.chromium.html "$pkgdir/usr/share/licenses/$pkgname/LICENSES.chromium.html"
+  ln -s /usr/share/qoder-ide/resources/app/ThirdPartyNotices.txt "$pkgdir/usr/share/licenses/$pkgname/ThirdPartyNotices.txt"
+}

@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+# Keep Wake on its bundled CLI version; standalone qoder/qodercli may differ.
+case "${1-}" in
+  update|upgrade|self-update)
+    printf '%s\n' 'QoderWake is managed by pacman. Update qoderwake-bin through your package manager.' >&2
+    exit 1
+    ;;
+esac
+export QODERCLI_PATH=/opt/qoderwake/qodercli/qodercli-wake
+export QODER_ENV="${QODER_ENV:-prod}"
+exec /opt/qoderwake/qoderwake "$@"
