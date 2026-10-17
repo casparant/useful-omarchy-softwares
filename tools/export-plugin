@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+"""Export allowlisted public sources to a NEW standalone plugin root; never publish."""
+import argparse
+from pathlib import Path
+import subprocess
+import sys
+from plugin_lib import export, select_plugin
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("plugin", help="public plugin folder name")
+    parser.add_argument("destination", type=Path)
+    args = parser.parse_args()
+    directory, entry = select_plugin(args.plugin)
+    destination = args.destination.expanduser().absolute()
+    count = export(directory, entry, destination)
+    print("Exported {} files to {} (manifest.json at root). Review, then initialize a separate Git repository for omarchy plugin add.".format(count, destination))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, KeyError, SyntaxError, subprocess.CalledProcessError) as error:
+        sys.exit("export-plugin: " + str(error))

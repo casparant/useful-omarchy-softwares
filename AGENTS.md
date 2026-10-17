@@ -1,6 +1,6 @@
 # Repository instructions
 
-This repository maintains Arch packaging recipes and Omarchy integration. Read README.md and the relevant package README before changing a recipe.
+This repository maintains Arch packaging recipes and Omarchy Quickshell plugins. Read README.md and the relevant package README before changing a recipe.
 
 - Keep each pkgbase self-contained in pkgbuilds/<pkgbase>. Match the directory and pkgbase names.
 - Keep catalog.json current. Distinguish a recipe's declared architectures, verified downloads/staging, Linux builds, and real runtime testing.
@@ -12,3 +12,11 @@ This repository maintains Arch packaging recipes and Omarchy integration. Read R
 - After edits run tools/check-package and python3 -m unittest discover -s tests -v. On Arch also run tools/check-package --require-makepkg and the Linux build/lifecycle checks in docs/testing.md.
 - Bump pkgrel for packaging changes to published packages; reset it for a new pkgver. Never silently introduce an epoch.
 - Documentation is primarily Chinese. Link primary upstream sources and record dates for release/architecture claims.
+
+## Plugins
+
+- Keep each public plugin self-contained in plugins/<name>, with its own manifest, stable ID, README and license/notice. Read plugins/README.md before editing.
+- plugins/catalog.json contains only public maintained sources and an explicit files allowlist for standalone export. Never copy private repositories, internal URLs, credentials or runtime state into this public tree.
+- Preserve imported Apache-2.0 notices and provenance; the root 0BSD license does not relicense imported plugins.
+- Plugins launch native applications and link to reviewed package guidance; do not embed another package converter or run vendor installers.
+- Run tools/check-plugin and each plugin test suite in addition to the root checks. Static tests and offscreen QtQuick rendering are not Omarchy runtime acceptance.

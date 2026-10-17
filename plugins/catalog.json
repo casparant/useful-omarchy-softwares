@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "plugins": [
+    {
+      "id": "anolisa.agent-entry",
+      "path": "plugins/agent-entry",
+      "name": "Agent Entry",
+      "status": "candidate",
+      "architectures": [
+        "x86_64",
+        "aarch64"
+      ],
+      "architecture_evidence": "QML and Python source; native applications and target desktop must be validated separately",
+      "runtime_dependencies": [
+        "Omarchy 4 Quickshell shell",
+        "python>=3.9",
+        "jq",
+        "xdg-utils",
+        "supported terminal"
+      ],
+      "license": "Apache-2.0",
+      "documentation": "plugins/agent-entry/README.md",
+      "upstream": {
+        "repository": "https://github.com/casparant/ANOLISA",
+        "commit": "a34f94ba0050d15b6404f349d86de2ebf6c5b880",
+        "path": "experiments/omarchy-agent-entry"
+      },
+      "verification": {
+        "python_tests": "passed-24-isolated-tests-on-python-3.9.6",
+        "manifest": "passed-official-validator-cce8b1c971df64a7610b818ff8819e4bea04584a",
+        "qml_render": "passed-PySide6-Essentials-6.7.3-offscreen-software-on-macos",
+        "linux_installation": "pending",
+        "omarchy_runtime": "pending",
+        "standalone_export": "passed-13-allowlisted-files-and-official-manifest"
+      },
+      "distribution": {
+        "canonical_source": "monorepo-subdirectory",
+        "standalone_repository": null,
+        "method": "local installer or explicit standalone export"
+      },
+      "files": [
+        "manifest.json",
+        "BarWidget.qml",
+        "Dashboard.qml",
+        "DashboardContent.qml",
+        "EntryButton.qml",
+        "EntryField.qml",
+        "agent_entry.py",
+        "install.py",
+        "LICENSE",
+        "NOTICE",
+        "ORIGIN.md",
+        "README.md",
+        "README_zh.md"
+      ]
+    }
+  ]
+}

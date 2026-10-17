@@ -17,6 +17,30 @@ jobs:
           persist-credentials: false
       - name: Check recipes and catalog
         run: tools/check-package
+      - name: Check public plugins
+        run: tools/check-plugin
+      - name: Validate manifests with the pinned official Omarchy checker
+        env:
+          VALIDATOR: ${{ runner.temp }}/omarchy-plugin-validate
+        run: |
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/omacom/omarchy/cce8b1c971df64a7610b818ff8819e4bea04584a/bin/omarchy-plugin-validate -o "$VALIDATOR"
+          echo "b6f6aba33a329a5ccd339050fbb2ce82272b791dd1f0d6a28c1837caa035b8c4  $VALIDATOR" | sha256sum -c -
+          python3 - <<'PYCODE'
+          import json, os, subprocess
+          from pathlib import Path
+          for plugin in json.loads(Path('plugins/catalog.json').read_text())['plugins']:
+              subprocess.run(['bash', os.environ['VALIDATOR'], plugin['path']], check=True)
+          PYCODE
+      - name: Test Agent Entry
+        run: python3 -m unittest discover -s plugins/agent-entry/tests -p 'test_*.py' -v
+      - name: Render and exercise the Agent Entry layout
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_QUICK_BACKEND: software
+        run: |
+          python3 -m venv "$RUNNER_TEMP/plugin-qt"
+          "$RUNNER_TEMP/plugin-qt/bin/python" -m pip install --disable-pip-version-check --only-binary=:all: -r plugins/agent-entry/tests/requirements-qt.txt
+          "$RUNNER_TEMP/plugin-qt/bin/python" plugins/agent-entry/tests/render_qml.py "$RUNNER_TEMP/agent-entry-preview.png"
       - name: Test maintenance tools
         run: python3 -m unittest discover -s tests -v
       - name: Check whitespace

@@ -1,0 +1,2 @@
+# Optional development-only renderer; not a plugin runtime dependency.
+PySide6-Essentials==6.7.3
