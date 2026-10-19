@@ -60,7 +60,7 @@ Omarchy 当前的[启动器](https://github.com/omacom/omarchy-pkgs/blob/master/
 双架构分别记录发行版/通道、包版本、Hyprland 版本和测试日期。以下均待实测，不代表已知故障：
 
 - 安装、升级、降级和卸载；用户配置保留，系统文件由 pacman 管理；检查包内文件权限。
-- Hyprland/XWayland 下冷启动、窗口类匹配、多屏、分数缩放、中文输入及复制粘贴；核实 fcitx5 插件与托盘。
+- Hyprland/XWayland 下冷启动、窗口类匹配、多屏、分数缩放、中文输入及复制粘贴；核实 fcitx5 插件与托盘。fcitx5 与引擎的环境配置见[中文输入法记录](../chinese-input.md)，本项仍需钉钉自身实测。
 - 手机扫码/账号登录、退出后重新登录、浏览器打开 `dingtalk:` 链接及已运行实例接收链接；使用测试账号，不在日志保存登录令牌。
 - 消息通知、托盘菜单、关闭窗口后的驻留行为及重新打开。
 - PipeWire、portal 下的屏幕共享/窗口共享、截图、多显示器选择；共享黑屏时区分客户端、XWayland 和 portal 的问题。

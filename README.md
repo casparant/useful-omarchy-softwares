@@ -142,5 +142,6 @@ docs/                      调研、打包、测试、发布及软件适配记�
 - [Agent Entry 迁移验证记录](docs/plugins-validation.md)
 - [AUR、Omarchy 与自建源发布流程](docs/publishing.md)
 - [钉钉官方 Arch 支持及现成 Omarchy 配方](docs/software/dingtalk.md)
+- [中文输入法：fcitx5 基线与搜狗 AUR 包的实测记录](docs/chinese-input.md)
 
 本仓库原创代码与说明采用 [0BSD](LICENSE)。迁入的 [Agent Entry](plugins/agent-entry/LICENSE) 保留 Apache-2.0，其他子目录有独立声明时以其为准。Qoder 等第三方程序保留其各自许可证；候选配方不代表获得了二进制再分发授权，也不代表 Qoder、钉钉或 Omarchy 官方背书。

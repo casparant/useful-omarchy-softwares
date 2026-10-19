@@ -31,7 +31,7 @@
 
 `prepare()` / `package()` 在临时目录进行了归档装配检查；针对宿主缺少 Linux `readelf` 和 GNU `install -D` 使用读取真实 ELF 头及等价目录创建适配器，未执行厂商二进制。装配后的文件与桌面候选没有文件路径冲突，命令及许可证软链接指向包内文件。该检查不代表 Linux 构建、安装或运行通过。
 
-待完成：Linux 构建/依赖检查，pacman 安装、升级、卸载，`qoder-ide --version`/文件打开，Hyprland 桌面启动，缩放/输入法，`qoder-ide:` 与旧 `qoder:` 登录回调，和桌面版/CLI/已有用户 dispatcher 共存、沙箱与自更新。详见 [测试流程](../../docs/testing.md)。
+待完成：Linux 构建/依赖检查，pacman 安装、升级、卸载，`qoder-ide --version`/文件打开，Hyprland 桌面启动，缩放/输入法（fcitx5 环境配置见[中文输入法记录](../../docs/chinese-input.md)，本项仍需 IDE 自身实测），`qoder-ide:` 与旧 `qoder:` 登录回调，和桌面版/CLI/已有用户 dispatcher 共存、沙箱与自更新。详见 [测试流程](../../docs/testing.md)。
 
 在 Arch Linux x86_64 中审阅配方后执行：
 
