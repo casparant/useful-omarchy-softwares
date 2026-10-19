@@ -53,7 +53,7 @@ class VerifyInstallTests(unittest.TestCase):
             return True if str(path) == "/.dockerenv" else self.old_exists(path)
 
         def is_file(path):
-            if str(path).startswith(("/opt/", "/usr/share/qoder-ide/")):
+            if str(path).startswith(("/opt/", "/usr/share/qoder-ide/", "/usr/bin/clash-verge", "/usr/bin/verge-mihomo")):
                 return str(path) != self.missing
             return self.old_is_file(path)
 
@@ -84,6 +84,27 @@ class VerifyInstallTests(unittest.TestCase):
         self.assertIn(("ldd", "/usr/share/qoder-ide/qoder-ide"), commands)
         self.assertIn(("pacman", "-R", "--noconfirm", "qoder-ide-bin"), commands)
         self.assertNotIn("version/help", output)
+
+    def test_clash_checks_dynamic_helpers_and_static_cores_without_starting_them(self):
+        output = self.invoke("clash-verge-rev-bin")
+        commands = [call[0] for call in self.calls]
+        for name in ("clash-verge", "clash-verge-service", "clash-verge-service-install", "clash-verge-service-uninstall"):
+            self.assertIn(("ldd", "/usr/bin/" + name), commands)
+        for name in ("verge-mihomo", "verge-mihomo-alpha"):
+            self.assertIn(("readelf", "-d", "/usr/bin/" + name), commands)
+            self.assertNotIn(("ldd", "/usr/bin/" + name), commands)
+        self.assertFalse(any(args[0].startswith("/usr/bin/") for args in commands))
+        self.assertNotIn("version/help", output)
+
+    def test_clash_core_dynamic_dependencies_require_review(self):
+        self.version = "0x00000001 (NEEDED) Shared library: [libunexpected.so]"
+        with self.assertRaisesRegex(ValueError, "gained dynamic dependencies"):
+            self.invoke("clash-verge-rev-bin")
+
+    def test_missing_clash_core_cannot_silently_pass(self):
+        self.missing = "/usr/bin/verge-mihomo-alpha"
+        with self.assertRaisesRegex(ValueError, "missing installed executable"):
+            self.invoke("clash-verge-rev-bin")
 
     def test_missing_ide_executable_cannot_silently_pass(self):
         self.missing = "/usr/share/qoder-ide/qoder-ide"

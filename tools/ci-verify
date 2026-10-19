@@ -41,7 +41,9 @@ def main():
     native = {"qoderwake-bin": ["/opt/qoderwake/qoderwake", "/opt/qoderwake/qodercli/qodercli-wake"],
               "qodercli-bin": ["/opt/qodercli/qodercli"],
               "qoder-bin": ["/opt/Qoder/qoder"],
-              "qoder-ide-bin": ["/usr/share/qoder-ide/qoder-ide"]}
+              "qoder-ide-bin": ["/usr/share/qoder-ide/qoder-ide"],
+              "clash-verge-rev-bin": ["/usr/bin/clash-verge", "/usr/bin/clash-verge-service",
+                                       "/usr/bin/clash-verge-service-install", "/usr/bin/clash-verge-service-uninstall"]}
     # GUI paths may vary: locate their installed main ELF via package-specific map.
     for executable in native.get(args.package, []):
         if not Path(executable).is_file():
@@ -50,6 +52,15 @@ def main():
         print(result.stdout)
         if result.returncode or "not found" in result.stdout:
             raise ValueError("unresolved native dependency: " + executable)
+    # The pinned Mihomo cores are static; ldd would fail on these valid ELFs.
+    # Read their dynamic tables instead, without starting a core or root helper.
+    static_cores = {"clash-verge-rev-bin": ["/usr/bin/verge-mihomo", "/usr/bin/verge-mihomo-alpha"]}
+    for executable in static_cores.get(args.package, []):
+        if not Path(executable).is_file():
+            raise ValueError("missing installed executable: " + executable)
+        result = run("readelf", "-d", executable, text=True, stdout=subprocess.PIPE)
+        if "(NEEDED)" in result.stdout:
+            raise ValueError("bundled core gained dynamic dependencies; review verification: " + executable)
     command = {"qoderwake-bin": "qoderwake", "qodercli-bin": "qodercli"}.get(args.package)
     if command:
         with tempfile.TemporaryDirectory(prefix="qoder-smoke-") as temporary:

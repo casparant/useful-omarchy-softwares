@@ -1,0 +1,63 @@
+# Local review candidate for the maintained AUR package; contribute fixes there.
+# Do not create a duplicate AUR submission or run Debian maintainer hooks.
+pkgname=clash-verge-rev-bin
+pkgver=2.5.8
+pkgrel=1
+pkgdesc='Clash Verge Rev GUI with the official bundled Mihomo cores'
+arch=('x86_64' 'aarch64')
+url='https://github.com/clash-verge-rev/clash-verge-rev'
+license=('GPL-3.0-only')
+# Direct ELF library owners plus the DEB's explicit OpenSSL and tray requirements.
+# webkit2gtk-4.1 also supplies libjavascriptcoregtk-4.1.so.0 on Arch.
+depends=('cairo' 'dbus' 'gcc-libs' 'gdk-pixbuf2' 'glib2' 'glibc>=2.35'
+         'gtk3' 'libayatana-appindicator' 'libsoup3' 'openssl' 'webkit2gtk-4.1')
+makedepends=('binutils')
+optdepends=('polkit: authorize optional service installation from the application'
+            'xdg-utils: open links with the desktop default applications')
+provides=('clash-verge-rev')
+conflicts=('clash-verge-rev' 'clash-verge' 'clash-verge-bin'
+           'clash-verge-rev-autobuild-bin')
+# Preserve all upstream ELF binaries, sidecars and embedded application data.
+options=('!strip' '!debug')
+source=('LICENSE.upstream')
+source_x86_64=("${pkgname}-${pkgver}-x86_64.deb::${url}/releases/download/v${pkgver}/Clash.Verge_${pkgver}_amd64.deb")
+source_aarch64=("${pkgname}-${pkgver}-aarch64.deb::${url}/releases/download/v${pkgver}/Clash.Verge_${pkgver}_arm64.deb")
+sha256sums=('3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986')
+sha256sums_x86_64=('ceeb7578c6f030b33ddf6346486db24013cf4557cc340de5f312f98a924a8546')
+sha256sums_aarch64=('acf83a1c9cd4e812b3efc33c7e5d3bfc86b4af37495010c91935c876c7d3ba2e')
+
+prepare() {
+  local debarch control
+  case "$CARCH" in
+    x86_64) debarch=amd64 ;;
+    aarch64) debarch=arm64 ;;
+    *) error "Unsupported architecture: $CARCH"; return 1 ;;
+  esac
+  control=$(bsdtar -xOf "$srcdir/control.tar.gz" ./control) || return 1
+  printf '%s\n' "$control" | grep -Fx 'Package: clash-verge' || return 1
+  printf '%s\n' "$control" | grep -Fx "Version: $pkgver" || return 1
+  printf '%s\n' "$control" | grep -Fx "Architecture: $debarch" || return 1
+}
+
+package() {
+  # Only stage the data payload; service setup is an explicit user action.
+  bsdtar --no-same-owner -xpf "$srcdir/data.tar.gz" -C "$pkgdir" || return 1
+
+  local executable header machine
+  for executable in clash-verge clash-verge-service \
+                    clash-verge-service-install clash-verge-service-uninstall \
+                    verge-mihomo verge-mihomo-alpha; do
+    header=$(LC_ALL=C readelf -h "$pkgdir/usr/bin/$executable") || return 1
+    machine=$(printf '%s\n' "$header" | sed -n 's/^ *Machine: *//p')
+    case "$CARCH:$machine" in
+      'x86_64:Advanced Micro Devices X86-64' | 'aarch64:AArch64') ;;
+      *) error "Expected a $CARCH executable in $executable; archive contains $machine"; return 1 ;;
+    esac
+    printf '%s\n' "$header" | grep -Eq '^ *Class: *ELF64$' || {
+      error "Expected a 64-bit ELF executable in $executable"
+      return 1
+    }
+  done
+
+  install -Dm644 "$srcdir/LICENSE.upstream" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

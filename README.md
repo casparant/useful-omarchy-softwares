@@ -2,7 +2,7 @@
 
 为 Arch Linux / Omarchy 维护实用软件的标准包配方、Quickshell 桌面插件、适配记录与测试流程。先把包做成独立可审阅的 `PKGBUILD`，再参与 AUR 维护或向 Omarchy 官方包仓库贡献。
 
-当前以 QoderWake 为首包，扩展到 Qoder CLI、桌面版和 IDE；钉钉复用已有 Omarchy 配方。这里保存配方和自己编写的辅助代码，第三方软件在构建时从官方地址下载。
+当前以 QoderWake 为首包，扩展到 Qoder CLI、桌面版、IDE 和 Clash Verge Rev；钉钉复用已有 Omarchy 配方。这里保存配方和自己编写的辅助代码，第三方软件在构建时从官方地址下载。
 
 ## Quickstart
 
@@ -33,6 +33,7 @@ cd useful-omarchy-softwares
 ./omarchy-tools list                             # 查看软件、架构和安装来源
 ./omarchy-tools install qoderwake qodercli         # 双架构软件，可一次选择多个
 ./omarchy-tools install qoder qoder-ide            # 桌面版和 IDE，目前仅 x86_64
+./omarchy-tools install clash-verge-rev           # 双架构本地候选，服务由用户显式启用
 ./omarchy-tools install dingtalk                   # 使用已配置的 Omarchy 软件源
 ./omarchy-tools panel --autostart                 # 首次安装，并在登录后显示面板
 ./omarchy-tools panel --replace                   # 更新面板，旧文件先备份
@@ -59,7 +60,7 @@ git pull --ff-only
 ~/.local/bin/anolisa-agent-entry open
 ```
 
-`update` 与 `install` 使用相同流程：本地 Qoder 配方以当前 checkout 固定的版本校验来源、干净重建并通过 pacman 安装；钉钉使用 Omarchy 当前软件源版本。实际安装版本以当前配方为准，旧 checkout 可能导致重装或降级，安装前留意 pacman 确认信息。批量安装中途失败会停止，先前已完成的安装会保留，可在处理错误后只重试未完成的软件。面板更新不更新应用。卸载 Wake 前先按[包说明](pkgbuilds/qoderwake-bin/README.md)停止已运行的 daemon 或用户服务。
+`update` 与 `install` 使用相同流程：本地配方以当前 checkout 固定的版本校验来源、干净重建并通过 pacman 安装；钉钉使用 Omarchy 当前软件源版本。实际安装版本以当前配方为准，旧 checkout 可能导致重装或降级，安装前留意 pacman 确认信息。批量安装中途失败会停止，先前已完成的安装会保留，可在处理错误后只重试未完成的软件。面板更新不更新应用。卸载 Wake 前先按[包说明](pkgbuilds/qoderwake-bin/README.md)停止已运行的 daemon 或用户服务。Clash Verge Rev 如已在 GUI 安装特权服务，卸载前先按[包说明](pkgbuilds/clash-verge-rev-bin/README.md#服务与卸载)移除服务。
 
 本地配方与面板仍处于候选阶段；快捷入口的自动化测试不代表已完成 Omarchy 实机验收，具体验证状态见下方目录与各组件说明。脚本按自身路径定位仓库，也可以从其他目录通过绝对路径调用。
 
@@ -71,6 +72,7 @@ git pull --ff-only
 | Qoder CLI 1.1.73 | [qodercli-bin](pkgbuilds/qodercli-bin/README.md) | x86_64 / aarch64 | 本地候选；参与现有 AUR 包维护 |
 | Qoder Desktop 0.4.8 | [qoder-bin](pkgbuilds/qoder-bin/README.md) | x86_64 | 本地候选；待 Linux/Wayland 验证 |
 | Qoder IDE 1.33.0 | [qoder-ide-bin](pkgbuilds/qoder-ide-bin/README.md) | x86_64 | 本地候选；待 Linux/Wayland 验证 |
+| Clash Verge Rev 2.5.8 | [clash-verge-rev-bin](pkgbuilds/clash-verge-rev-bin/README.md) | x86_64 / aarch64 | 双架构下载、ELF 与暂存通过；待 Linux 验证 |
 | 钉钉 | [安装与调研](docs/software/dingtalk.md) | 上游配方声明双架构 | Omarchy 已有 dingtalk-bin，不重复打包 |
 
 完整来源、维护归属和验证状态见 [catalog.json](catalog.json)。`aarch64` 指 Linux ARM64；不会将 x86 软件改标为 ARM。GUI 两包目前没有确认官方 Linux ARM 产物。

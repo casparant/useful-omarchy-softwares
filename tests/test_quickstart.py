@@ -66,6 +66,15 @@ class DispatchTests(unittest.TestCase):
                 self.assertEqual(self.process.call_args.kwargs["cwd"], ROOT / "pkgbuilds/qoderwake-bin")
                 self.assertTrue(all(call.kwargs["check"] for call in self.process.call_args_list))
 
+    def test_clash_uses_its_local_recipe_on_both_architectures(self):
+        for arch, name in (("x86_64", "clash-verge-rev"), ("aarch64", "clash-verge-rev-bin")):
+            with self.subTest(arch=arch), mock.patch.object(cli.platform, "machine", return_value=arch):
+                self.process.reset_mock()
+                self.assertEqual(self.invoke("install", name), 0)
+                self.assertEqual(self.commands()[-1], ["makepkg", "--syncdeps", "--install", "--cleanbuild", "--force"])
+                self.assertEqual(self.process.call_args.kwargs["cwd"], ROOT / "pkgbuilds/clash-verge-rev-bin")
+                self.assertFalse(any(command[0] == "omarchy" for command in self.commands()))
+
     def test_aliases_are_deduplicated_and_update_uses_checkout_recipe(self):
         self.assertEqual(self.invoke("update", "qodercli-bin", "qodercli"), 0)
         self.assertEqual(len(self.commands()), 2)

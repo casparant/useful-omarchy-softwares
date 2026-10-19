@@ -116,6 +116,38 @@
       "binary_redistribution": "unconfirmed; recipes only"
     },
     {
+      "id": "clash-verge-rev",
+      "name": "Clash Verge Rev",
+      "homepage": "https://github.com/clash-verge-rev/clash-verge-rev",
+      "researched_on": "2026-10-20",
+      "architectures": [
+        "x86_64",
+        "aarch64"
+      ],
+      "recipe": "pkgbuilds/clash-verge-rev-bin",
+      "documentation": "pkgbuilds/clash-verge-rev-bin/README.md",
+      "status": "recipe-candidate",
+      "aur": "https://aur.archlinux.org/packages/clash-verge-rev-bin",
+      "omarchy": null,
+      "maintenance": "local review candidate; coordinate with the maintained AUR package, no duplicate AUR submission; service lifecycle remains explicit",
+      "observed_release": {
+        "version": "2.5.8",
+        "published_at": "2026-10-09T02:43:45Z",
+        "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/tag/v2.5.8",
+        "discovery": "https://api.github.com/repos/clash-verge-rev/clash-verge-rev/releases/latest",
+        "updates": "manual review; GitHub asset digests must be verified against downloads"
+      },
+      "verification": {
+        "source_checksums": "passed-both-architectures-2026-10-20",
+        "elf_architecture": "passed-six-elfs-per-architecture-2026-10-20",
+        "package_staging": "passed-on-macos-both-architectures-with-readelf-and-install-adapters; wrong-architecture-payload-rejected",
+        "linux_build": "pending",
+        "lifecycle": "pending",
+        "omarchy_runtime": "pending"
+      },
+      "binary_redistribution": "GPL-3.0-only application; corresponding-source and bundled-component obligations require review before binary hosting; recipes only"
+    },
+    {
       "id": "dingtalk",
       "name": "钉钉",
       "homepage": "https://www.dingtalk.com/",

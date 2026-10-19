@@ -1,0 +1,37 @@
+pkgbase = clash-verge-rev-bin
+	pkgver = 2.5.8
+	pkgrel = 1
+	pkgdesc = Clash Verge Rev GUI with the official bundled Mihomo cores
+	url = https://github.com/clash-verge-rev/clash-verge-rev
+	arch = x86_64
+	arch = aarch64
+	license = GPL-3.0-only
+	depends = cairo
+	depends = dbus
+	depends = gcc-libs
+	depends = gdk-pixbuf2
+	depends = glib2
+	depends = glibc>=2.35
+	depends = gtk3
+	depends = libayatana-appindicator
+	depends = libsoup3
+	depends = openssl
+	depends = webkit2gtk-4.1
+	makedepends = binutils
+	optdepends = polkit: authorize optional service installation from the application
+	optdepends = xdg-utils: open links with the desktop default applications
+	provides = clash-verge-rev
+	conflicts = clash-verge-rev
+	conflicts = clash-verge
+	conflicts = clash-verge-bin
+	conflicts = clash-verge-rev-autobuild-bin
+	options = !strip
+	options = !debug
+	source = LICENSE.upstream
+	source_x86_64 = clash-verge-rev-bin-2.5.8-x86_64.deb::https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v2.5.8/Clash.Verge_2.5.8_amd64.deb
+	source_aarch64 = clash-verge-rev-bin-2.5.8-aarch64.deb::https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v2.5.8/Clash.Verge_2.5.8_arm64.deb
+	sha256sums = 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986
+	sha256sums_x86_64 = ceeb7578c6f030b33ddf6346486db24013cf4557cc340de5f312f98a924a8546
+	sha256sums_aarch64 = acf83a1c9cd4e812b3efc33c7e5d3bfc86b4af37495010c91935c876c7d3ba2e
+
+pkgname = clash-verge-rev-bin
