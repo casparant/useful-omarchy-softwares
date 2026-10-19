@@ -1,3 +1,4 @@
+// Modified 2026-10-19: language-neutral bar label. Apache-2.0; see ORIGIN.md.
 import QtQuick
 import Quickshell
 
@@ -7,7 +8,7 @@ Item {
     property string moduleName: "anolisa.agent-entry"
     property var settings: ({})
     readonly property bool vertical: bar ? bar.vertical : false
-    implicitWidth: vertical ? 28 : 104
+    implicitWidth: vertical ? 28 : 112
     implicitHeight: 28
 
     Rectangle {
@@ -17,7 +18,7 @@ Item {
         border.color: "#667bba"
         Text {
             anchors.centerIn: parent
-            text: root.vertical ? "A" : "✦  Agent 入口"
+            text: root.vertical ? "A" : "✦  Agent Entry"
             color: "#e9efff"
             font.pixelSize: 12
             font.bold: true

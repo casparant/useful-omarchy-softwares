@@ -1,14 +1,15 @@
-# ANOLISA Agent Entry · Omarchy 插件
+# Agent Entry · Omarchy 插件
 
-<!-- Modified 2026-10-17: migrated from ANOLISA; installers replaced with package guidance. -->
+<!-- Modified 2026-10-19: bilingual UI, persisted language choice and English demonstration setup. -->
 
-通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.2.0**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
+通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.3.0**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
 
 源码来自公开 ANOLISA 实验，采用 **Apache-2.0**；详见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和固定版本的[来源与修改记录](ORIGIN.md)。本目录不适用仓库原创代码的 0BSD 许可。
 
 ## 功能与打包边界
 
 - 顶栏切换面板；可选登录后自动显示。
+- 英语 / 中文界面；随系统语言或手动选择，设置跨重启保留。
 - 在指定项目目录打开 Shell Terminal、cosh-ng、Qoder CLI、Codex CLI 或 QoderWake。
 - 分别检测和启动 Qoder Desktop 与 Qoder IDE；Qoder CLI 只探测 `qodercli`，避免把 GUI 的 `qoder` 命令认作 CLI。
 - 添加自定义终端命令、GUI 命令或 Web URL；命令存为参数数组。
@@ -36,13 +37,12 @@
 在仓库中执行，使用当前图形会话的普通用户：
 
 ```bash
-cd plugins/agent-entry
-python3 install.py
-# 可选：登录桌面后显示面板
-python3 install.py --replace --autostart
+./omarchy-tools panel
+# 已安装旧版时升级；需要登录后显示再加 --autostart
+./omarchy-tools panel --replace
 ```
 
-如果使用独立导出目录，在其根目录直接执行 `python3 install.py`，无需进入 `plugins/agent-entry`。
+如果使用独立导出目录，在其根目录直接执行 `python3 install.py`，无需根目录工具；升级使用 `python3 install.py --replace`，登录后显示使用 `--autostart`。
 
 安装器先执行官方 `omarchy plugin validate`，再复制本目录的明确文件清单、注册菜单入口并启用插件。部署文件自包含，不依赖源仓库上级目录，也不改变软件源或系统软件包。
 
@@ -57,9 +57,30 @@ python3 install.py --replace --autostart
 
 设置了 `XDG_CONFIG_HOME` 时，Agent 自身的 `anolisa/agent-entry.json` 与 `anolisa/plugin-backups/` 采用该位置。Omarchy 的插件与登录钩子始终位于 `~/.config/omarchy/`，与官方发现机制一致；不修改已有 Hyprland 配置或其他钩子。
 
+## 界面语言与英文演示
+
+面板右上角「收起 / Close」右侧的语言按钮立即切换界面，并保存选择：中文界面显示 **English**，英文界面显示 **中文**。默认 `language: "auto"`，依次使用 `LC_ALL`、`LC_MESSAGES`、`LANG` 的第一个非空值；`zh` 系列 locale 使用中文，其余使用英语。可保存的值是 `auto`、`en`、`zh`；已有配置无需迁移，未设置时按 `auto` 处理。应用品牌、自定义入口名、命令与路径保持原样。
+
+更新源码后先重新部署；只拉取仓库不会改变已安装的插件。给英语观众演示前执行：
+
+```bash
+./omarchy-tools panel --replace
+~/.local/bin/anolisa-agent-entry language en
+~/.local/bin/anolisa-agent-entry open
+```
+
+此后重新打开面板仍为英语。命令入口也可以切回中文或系统语言：
+
+```bash
+~/.local/bin/anolisa-agent-entry language zh
+~/.local/bin/anolisa-agent-entry language auto
+```
+
+选择保存在上表的 `agent-entry.json` 的 `language` 字段。手动编辑可设 `"language": "en"`；再次打开面板读取。安装后的应用菜单默认名称为 **Agent Entry**，中文系统菜单显示 **Agent 入口**；菜单语言由桌面 locale 决定，独立于面板选择。
+
 ## 首次使用与自定义入口
 
-1. 点击顶栏「Agent 入口」，打开 Shell Terminal，确认项目目录。
+1. 点击顶栏「Agent Entry / Agent 入口」，打开 Shell Terminal，确认项目目录。
 2. 未安装的软件先查看「安装说明」，按配方文档审阅并安装。
 3. 刷新面板后启动软件，在原生界面完成登录。
 4. 如需自定义命令，点击「添加入口」，或编辑配置中的 `commands`。
@@ -72,6 +93,7 @@ QoderWake 仅在点击后才尝试 `whoami`，需要时执行原生 `login`，�
 {
   "version": 1,
   "project": "/home/you/Projects",
+  "language": "auto",
   "commands": {
     "cosh": ["/opt/anolisa/bin/cosh-ng"],
     "qoder-cli": ["/home/you/.local/bin/my-qoder-cli"]
@@ -128,7 +150,7 @@ python3 -m unittest discover -s tests -v
 omarchy plugin validate .
 ```
 
-2026-10-17 在 macOS 的 Python 3.9.6 上通过 24 项隔离测试，5 个 Python 文件均通过源码编译检查。自动化测试覆盖命令隔离、参数数组、配置、安装说明链接、Wake 启动参数、旧 Codex 发现回退、自定义 XDG 配置与官方插件路径、升级预检、备份升级和可恢复卸载。它们不代替软件本体运行。可选真实 QtQuick 排版测试需要开发环境安装 PySide6，部署不依赖它：
+0.2.0 于 2026-10-17 在 macOS 的 Python 3.9.6 上通过 24 项隔离测试，5 个 Python 文件均通过源码编译检查。0.3.0 新增语言选择、locale 回退、双语界面及菜单资源检查；本轮结果见[验证记录](https://github.com/casparant/useful-omarchy-softwares/blob/main/docs/plugins-validation.md)。自动化测试覆盖命令隔离、参数数组、配置、安装说明链接、Wake 启动参数、旧 Codex 发现回退、自定义 XDG 配置与官方插件路径、升级预检、备份升级和可恢复卸载。它们不代替软件本体运行。可选真实 QtQuick 排版测试需要开发环境安装 PySide6，部署不依赖它：
 
 ```bash
 python3 -m venv /tmp/agent-entry-qt
@@ -136,6 +158,6 @@ python3 -m venv /tmp/agent-entry-qt
 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /tmp/agent-entry-qt/bin/python tests/render_qml.py /tmp/agent-entry-preview.png
 ```
 
-已使用 PySide6-Essentials 6.7.3、offscreen/software 后端完成真实 QtQuick 渲染及交互测试：终端与安装说明动作、注册弹窗、Esc、窄窗口滚动与 QoderWake 按钮均通过。官方 Omarchy manifest 验证器（提交 `cce8b1c971df64a7610b818ff8819e4bea04584a`）检查通过；这些结果不代表 Quickshell 宿主或目标 Linux 会话已运行。
+0.2.0 已使用 PySide6-Essentials 6.7.3、offscreen/software 后端完成真实 QtQuick 渲染及交互测试：终端与安装说明动作、注册弹窗、Esc、窄窗口滚动与 QoderWake 按钮均通过。官方 Omarchy manifest 验证器（提交 `cce8b1c971df64a7610b818ff8819e4bea04584a`）检查通过；这些结果不代表 Quickshell 宿主或目标 Linux 会话已运行。
 
-**待实机验收**：两种 CPU 架构分别安装插件 → 顶栏展开/收起 → 启动终端与已安装应用 → 添加自定义入口 → 打开安装说明 → 原生登录 → 注销重登确认可选钩子 → 升级及卸载。`x86_64` / `aarch64` 表示源码使用与 CPU 架构无关的 QML/Python，不代表这两种架构已经运行通过。
+**待实机验收**：两种 CPU 架构分别安装插件 → 英语/中文切换、持久化及系统语言回退 → 顶栏展开/收起 → 启动终端与已安装应用 → 添加自定义入口 → 打开安装说明 → 原生登录 → 注销重登确认可选钩子 → 升级及卸载。`x86_64` / `aarch64` 表示源码使用与 CPU 架构无关的 QML/Python，不代表这两种架构已经运行通过。

@@ -15,6 +15,9 @@ spec.loader.exec_module(entry)
 
 class EntryTest(unittest.TestCase):
     def setUp(self) -> None:
+        locale = patch.dict(entry.os.environ, {"LC_ALL": "zh_CN.UTF-8"})
+        locale.start()
+        self.addCleanup(locale.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.cfg = Path(self.temp.name) / "agent-entry.json"

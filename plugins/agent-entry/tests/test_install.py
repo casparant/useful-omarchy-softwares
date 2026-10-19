@@ -1,4 +1,4 @@
-# Modified 2026-10-17: validate self-contained files and preserve existing installs.
+# Modified 2026-10-19: cover bilingual deploy resources, desktop names and preserved installs.
 # Apache-2.0; see ../LICENSE, ../NOTICE and ../ORIGIN.md.
 import importlib.util
 import tempfile
@@ -51,6 +51,8 @@ class InstallTest(unittest.TestCase):
         self.assertTrue((self.target / "LICENSE").is_file())
         self.assertTrue((self.target / "NOTICE").is_file())
         self.assertTrue((self.target / "install.py").is_file())
+        self.assertTrue((self.target / "I18n.js").is_file())
+        self.assertTrue((self.target / "i18n.py").is_file())
         self.assertTrue((self.home / ".local/bin/anolisa-agent-entry").is_symlink())
         self.assertIn(" open ", self.hook.read_text())
         self.invoke("--uninstall")
@@ -59,6 +61,21 @@ class InstallTest(unittest.TestCase):
         self.assertEqual(other_hook.read_text(), "unchanged")
         self.assertTrue(config.exists())
         self.assertTrue(list((self.home / ".config/anolisa/plugin-backups").glob("removed-*")))
+
+    def test_desktop_menu_has_english_default_and_chinese_locales(self) -> None:
+        self.invoke()
+        desktop = self.home / ".local/share/applications/anolisa-agent-entry.desktop"
+        entries = dict(
+            line.split("=", 1) for line in desktop.read_text().splitlines() if "=" in line
+        )
+        self.assertEqual(entries["Name"], "Agent Entry")
+        self.assertEqual(entries["Name[zh_CN]"], "Agent 入口")
+        self.assertEqual(entries["Name[zh_TW]"], "Agent 入口")
+        self.assertEqual(entries["Comment"], "Launch native agents and terminals")
+        self.assertEqual(entries["Comment[zh_CN]"], "启动原生 Agent 与终端")
+        self.assertEqual(entries["Comment[zh_TW]"], "啟動原生 Agent 與終端")
+        self.assertIn("anolisa-agent-entry", entries["Exec"])
+        self.assertTrue(entries["Exec"].endswith(" open"))
 
     def test_upgrade_backs_up_plugin_and_hook(self) -> None:
         self.invoke("--autostart")

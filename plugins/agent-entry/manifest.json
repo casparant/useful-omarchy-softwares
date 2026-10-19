@@ -1,11 +1,22 @@
 {
   "schemaVersion": 1,
   "id": "anolisa.agent-entry",
-  "name": "ANOLISA Agent Entry",
-  "version": "0.2.0",
-  "description": "Agent launcher, package guidance and local registration",
-  "kinds": ["bar-widget", "panel"],
+  "name": "Agent Entry",
+  "version": "0.3.0",
+  "description": "Bilingual agent launcher, package guidance and local registration",
+  "kinds": [
+    "bar-widget",
+    "panel"
+  ],
   "keepLoaded": true,
-  "entryPoints": {"barWidget": "BarWidget.qml", "panel": "Dashboard.qml"},
-  "barWidget": {"displayName": "Agent 入口", "category": "AI", "defaultSection": "right", "allowMultiple": false}
+  "entryPoints": {
+    "barWidget": "BarWidget.qml",
+    "panel": "Dashboard.qml"
+  },
+  "barWidget": {
+    "displayName": "Agent Entry",
+    "category": "AI",
+    "defaultSection": "right",
+    "allowMultiple": false
+  }
 }

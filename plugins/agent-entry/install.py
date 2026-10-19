@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Install this local plugin without changing system packages or overwriting user data."""
 
-# Modified 2026-10-17: self-contained migration, official shell paths and upgrade preflight.
+# Modified 2026-10-19: deploy bilingual resources and localized desktop menu metadata.
 # Apache-2.0 source and revision: ORIGIN.md.
 
 import argparse
@@ -22,7 +22,9 @@ FILES = [
     "DashboardContent.qml",
     "EntryButton.qml",
     "EntryField.qml",
+    "I18n.js",
     "agent_entry.py",
+    "i18n.py",
     "install.py",
     "LICENSE",
     "NOTICE",
@@ -103,8 +105,12 @@ def main() -> None:
     launcher.symlink_to(helper)
     desktop.parent.mkdir(parents=True, exist_ok=True)
     desktop_text = (
-        "[Desktop Entry]\nType=Application\nName=ANOLISA Agent 入口\n"
-        "Comment=启动原生 Agent 与终端\nExec=" + desktop_quote(str(launcher)) + " open\n"
+        "[Desktop Entry]\nType=Application\nName=Agent Entry\n"
+        "Name[zh_CN]=Agent 入口\nName[zh_TW]=Agent 入口\n"
+        "Comment=Launch native agents and terminals\n"
+        "Comment[zh_CN]=启动原生 Agent 与终端\n"
+        "Comment[zh_TW]=啟動原生 Agent 與終端\n"
+        "Exec=" + desktop_quote(str(launcher)) + " open\n"
         "Icon=utilities-terminal\nTerminal=false\nCategories=Development;Utility;\n"
     )
     desktop.write_text(desktop_text, encoding="utf-8")

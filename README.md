@@ -51,6 +51,14 @@ git pull --ff-only
 ./omarchy-tools update qoderwake qodercli
 ```
 
+英文演示时先更新面板，再固定为英语；之后也可用面板右上角的 English / 中文按钮切换：
+
+```bash
+./omarchy-tools panel --replace
+~/.local/bin/anolisa-agent-entry language en
+~/.local/bin/anolisa-agent-entry open
+```
+
 `update` 与 `install` 使用相同流程：本地 Qoder 配方以当前 checkout 固定的版本校验来源、干净重建并通过 pacman 安装；钉钉使用 Omarchy 当前软件源版本。实际安装版本以当前配方为准，旧 checkout 可能导致重装或降级，安装前留意 pacman 确认信息。批量安装中途失败会停止，先前已完成的安装会保留，可在处理错误后只重试未完成的软件。面板更新不更新应用。卸载 Wake 前先按[包说明](pkgbuilds/qoderwake-bin/README.md)停止已运行的 daemon 或用户服务。
 
 本地配方与面板仍处于候选阶段；快捷入口的自动化测试不代表已完成 Omarchy 实机验收，具体验证状态见下方目录与各组件说明。脚本按自身路径定位仓库，也可以从其他目录通过绝对路径调用。

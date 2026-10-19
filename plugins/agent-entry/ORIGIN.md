@@ -11,6 +11,15 @@
 
 上游根 NOTICE 还列有其他 ANOLISA 组件及其依赖，这些代码未被迁入。本目录只保留与本次移入源码相关的项目声明；没有打包任何第三方应用二进制。
 
+## 2026-10-19 · 0.3.0
+
+- 将顶栏、面板、对话框与操作反馈改为英语 / 中文，新增自包含 `I18n.js` 与 `i18n.py`；应用品牌、用户名称、路径和命令不翻译。
+- 增加 `language` 配置与 `language auto|en|zh` 命令；默认按 `LC_ALL`、`LC_MESSAGES`、`LANG` 解析系统语言，非中文 locale 使用英语，面板内切换后保存选择。
+- 显示名称统一为 Agent Entry，保留稳定插件 ID `anolisa.agent-entry`、原有配置、Apache-2.0 许可证与署名；桌面菜单增加简体及繁体中文本地化。
+- 部署和独立导出白名单同步包含两份语言资源；更新测试、升级说明及英文演示命令。
+
+本轮验证范围与尚待完成的目标机器验收见[验证记录](https://github.com/casparant/useful-omarchy-softwares/blob/main/docs/plugins-validation.md)。
+
 ## 2026-10-17 · 0.2.0
 
 - 保留插件 ID、配置结构、顶栏与面板接口、原生应用启动和自定义入口。

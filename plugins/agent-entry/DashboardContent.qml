@@ -1,8 +1,9 @@
-// Modified 2026-10-17: migration replaces embedded installers with package guidance.
+// Modified 2026-10-19: English/Chinese interface and persistent language action.
 // Apache-2.0; see LICENSE, NOTICE and ORIGIN.md.
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
+import "I18n.js" as I18n
 
 Rectangle {
     id: root
@@ -10,7 +11,9 @@ Rectangle {
     property var agents: []
     property string project: ""
     property string configPath: ""
-    property string message: "选择一个 Agent 开始工作。首次登录在各自原生界面完成。"
+    property string language: Qt.locale().name.toLowerCase().indexOf("zh") === 0 ? "zh" : "en"
+    property string message: ""
+    function t(key) { return I18n.text(language, key) }
     property bool busy: false
     signal actionRequested(var args)
     signal refreshRequested()
@@ -34,29 +37,37 @@ Rectangle {
             RowLayout {
                 Layout.fillWidth: true
                 ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     spacing: 5
                     Text { text: "ANOLISA  /  AGENT ENTRY"; color: "#8babf5"; font.pixelSize: 12; font.letterSpacing: 1.5 }
-                    Text { text: "从这里，开始 Agent 工作"; color: "#f2f5ff"; font.pixelSize: 27; font.bold: true }
-                    Text { text: "终端、原生 Agent 和 Web Console，在一个入口找到。"; color: "#9cabc4"; font.pixelSize: 13 }
+                    Text { objectName: "heading"; Layout.fillWidth: true; wrapMode: Text.WordWrap; text: root.t("heading"); color: "#f2f5ff"; font.pixelSize: 27; font.bold: true }
+                    Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: root.t("tagline"); color: "#9cabc4"; font.pixelSize: 13 }
                 }
-                Item { Layout.fillWidth: true }
-                EntryButton { objectName: "addEntry"; text: "添加入口"; onClicked: registerDialog.open() }
-                EntryButton { text: "刷新"; enabled: !root.busy; onClicked: root.refreshRequested() }
-                EntryButton { text: "收起"; quiet: true; onClicked: root.closeRequested() }
+                EntryButton { objectName: "addEntry"; text: root.t("add"); onClicked: registerDialog.open() }
+                EntryButton { text: root.t("refresh"); enabled: !root.busy; onClicked: root.refreshRequested() }
+                EntryButton { text: root.t("close"); quiet: true; onClicked: root.closeRequested() }
+                EntryButton {
+                    objectName: "languageToggle"
+                    text: root.language === "zh" ? "English" : "中文"
+                    enabled: !root.busy
+                    onClicked: root.actionRequested(["language", root.language === "zh" ? "en" : "zh"])
+                }
             }
 
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
-                Text { text: "项目目录"; color: "#b4c1d7"; font.pixelSize: 13 }
+                Text { text: root.t("project"); color: "#b4c1d7"; font.pixelSize: 13 }
                 EntryField {
                     id: projectField
+                    objectName: "projectField"
                     Layout.fillWidth: true
                     text: root.project
                     placeholderText: "/home/you/Projects/example"
                     onAccepted: root.actionRequested(["project", text])
                 }
-                EntryButton { text: "保存目录"; enabled: !root.busy; onClicked: root.actionRequested(["project", projectField.text]) }
+                EntryButton { text: root.t("save_project"); enabled: !root.busy; onClicked: root.actionRequested(["project", projectField.text]) }
             }
 
             Rectangle {
@@ -77,28 +88,28 @@ Rectangle {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 7
-                        Text { text: "真实终端 · cosh-ng"; font.pixelSize: 19; font.bold: true; color: "#edf2ff" }
+                        Text { text: root.t("terminal_heading"); font.pixelSize: 19; font.bold: true; color: "#edf2ff" }
                         Text {
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
-                            text: "打开独立终端，在当前项目中工作。已有 cosh-ng 可以直接启动；终端与面板可以并排使用。"
+                            text: root.t("terminal_description")
                             color: "#a9b9d3"; font.pixelSize: 13
                         }
-                        Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: root.terminalAvailable() ? "已发现 cosh 启动命令 · 登录与会话在原生终端完成" : "尚未发现 cosh-ng：可添加自定义终端入口，或在配置中指定命令。"; color: "#8da8d4"; font.pixelSize: 12 }
+                        Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: root.terminalAvailable() ? root.t("terminal_ready") : root.t("terminal_missing"); color: "#8da8d4"; font.pixelSize: 12 }
                     }
                     ColumnLayout {
                         Layout.minimumWidth: 166
                         spacing: 9
-                        EntryButton { Layout.fillWidth: true; text: "打开 cosh-ng"; accent: true; enabled: root.terminalAvailable() && !root.busy; onClicked: root.actionRequested(["launch", "cosh", "--project", projectField.text]) }
-                        EntryButton { objectName: "openTerminal"; Layout.fillWidth: true; text: "打开 Shell Terminal"; enabled: !root.busy; onClicked: root.actionRequested(["launch", "terminal", "--project", projectField.text]) }
+                        EntryButton { Layout.fillWidth: true; text: root.t("open_cosh"); accent: true; enabled: root.terminalAvailable() && !root.busy; onClicked: root.actionRequested(["launch", "cosh", "--project", projectField.text]) }
+                        EntryButton { objectName: "openTerminal"; Layout.fillWidth: true; text: root.t("open_terminal"); enabled: !root.busy; onClicked: root.actionRequested(["launch", "terminal", "--project", projectField.text]) }
                     }
                 }
             }
 
             RowLayout {
-                Text { text: "选择你的 Agent"; color: "#e8eefc"; font.pixelSize: 18; font.bold: true }
+                Text { text: root.t("choose"); color: "#e8eefc"; font.pixelSize: 18; font.bold: true }
                 Item { Layout.fillWidth: true }
-                Text { text: "图形客户端 / 终端 / Web"; color: "#8798b5"; font.pixelSize: 12 }
+                Text { text: root.t("agent_types"); color: "#8798b5"; font.pixelSize: 12 }
             }
 
             GridLayout {
@@ -133,7 +144,7 @@ Rectangle {
                                 EntryButton {
                                     objectName: "agentAction-" + card.modelData.id
                                     Layout.fillWidth: true
-                                    text: card.modelData.available ? "打开" : "安装说明"
+                                    text: card.modelData.available ? root.t("open") : root.t("install_guide")
                                     accent: card.modelData.available
                                     enabled: !root.busy && (card.modelData.available || !!card.modelData.docs)
                                     onClicked: {
@@ -142,7 +153,7 @@ Rectangle {
                                     }
                                 }
                                 EntryButton {
-                                    text: "说明"
+                                    text: root.t("guide")
                                     visible: !!card.modelData.docs && card.modelData.available
                                     quiet: true
                                     enabled: !root.busy
@@ -160,8 +171,9 @@ Rectangle {
                 radius: 9; color: "#172235"; border.color: "#2d3c55"
                 Text {
                     id: statusText
+                    objectName: "statusText"
                     anchors.fill: parent; anchors.margins: 12
-                    text: root.message
+                    text: root.busy ? root.t("working") : (root.message || root.t("welcome"))
                     textFormat: Text.PlainText
                     wrapMode: Text.WrapAnywhere
                     color: "#b7c8e5"; font.pixelSize: 12
@@ -172,10 +184,10 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
-                    text: "v0.2 · 安装说明在浏览器中打开，软件由 pacman / makepkg 管理。检测到命令不代表已经登录。"
+                    text: root.t("footer")
                     color: "#7f91ad"; font.pixelSize: 11
                 }
-                EntryButton { text: "编辑配置"; quiet: true; onClicked: root.actionRequested(["edit-config"]) }
+                EntryButton { text: root.t("edit_config"); quiet: true; enabled: !root.busy; onClicked: root.actionRequested(["edit-config"]) }
             }
         }
     }
@@ -183,33 +195,68 @@ Rectangle {
     Dialog {
         id: registerDialog
         objectName: "registerDialog"
-        title: "添加 Agent 入口"
+        title: root.t("register_title")
         modal: true
         anchors.centerIn: parent
         width: Math.min(root.width - 40, 570)
         standardButtons: Dialog.NoButton
         background: Rectangle { color: "#202c42"; radius: 12; border.color: "#526787" }
-        header: Text { text: "添加 Agent 入口"; color: "#f0f4ff"; font.pixelSize: 20; padding: 20 }
+        header: Text { text: root.t("register_title"); color: "#f0f4ff"; font.pixelSize: 20; padding: 20 }
         contentItem: ColumnLayout {
             spacing: 12
-            EntryField { id: entryId; Layout.fillWidth: true; placeholderText: "唯一 ID，如 my-cosh（小写字母、数字、短横线）" }
-            EntryField { id: entryName; Layout.fillWidth: true; placeholderText: "显示名称，如 我的 cosh" }
-            ComboBox { id: entryKind; Layout.fillWidth: true; model: ["终端命令", "图形程序", "Web 页面"] }
+            EntryField { id: entryId; Layout.fillWidth: true; placeholderText: root.t("entry_id") }
+            EntryField { id: entryName; Layout.fillWidth: true; placeholderText: root.t("entry_name") }
+            ComboBox {
+                id: entryKind
+                objectName: "entryKind"
+                Layout.fillWidth: true
+                model: ["terminal", "gui", "web"]
+                displayText: root.t("kind_" + currentText)
+                palette.text: "#e8eefc"
+                palette.buttonText: "#e8eefc"
+                palette.button: "#101827"
+                palette.base: "#202c42"
+                contentItem: Text {
+                    text: entryKind.displayText
+                    color: "#e8eefc"
+                    font.pixelSize: 13
+                    leftPadding: 12
+                    rightPadding: 32
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle { color: "#101827"; radius: 6; border.color: "#3b4a64" }
+                indicator: Text {
+                    text: "▾"
+                    color: "#9cabc4"
+                    font.pixelSize: 18
+                    x: entryKind.width - width - 12
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                delegate: ItemDelegate {
+                    required property string modelData
+                    required property int index
+                    width: entryKind.width
+                    text: root.t("kind_" + modelData)
+                    highlighted: entryKind.highlightedIndex === index
+                    contentItem: Text { text: parent.text; color: "#e8eefc"; font.pixelSize: 13; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.highlighted ? "#33435f" : "#202c42" }
+                }
+            }
             EntryField {
                 id: entryValue
                 Layout.fillWidth: true
-                placeholderText: entryKind.currentIndex === 2 ? "https://example.com/console" : '命令参数 JSON，例如 ["/opt/anolisa/bin/cosh-ng"]'
+                placeholderText: entryKind.currentIndex === 2 ? "https://example.com/console" : root.t("command_hint")
             }
             Text {
                 Layout.fillWidth: true; wrapMode: Text.WordWrap
                 color: "#bdc9dc"; font.pixelSize: 12
-                text: "只注册你信任的程序或页面。命令按参数数组执行，不拼接 Shell。登录由各自 Agent 完成。"
+                text: root.t("registration_note")
             }
             RowLayout {
                 Item { Layout.fillWidth: true }
-                EntryButton { text: "取消"; onClicked: registerDialog.close() }
+                EntryButton { text: root.t("cancel"); onClicked: registerDialog.close() }
                 EntryButton {
-                    text: "保存入口"; accent: true
+                    text: root.t("save_entry"); accent: true
                     enabled: !root.busy && entryId.text.length > 0 && entryName.text.length > 0 && entryValue.text.length > 0
                     onClicked: {
                         root.actionRequested(["register", entryId.text, entryName.text, ["terminal", "gui", "web"][entryKind.currentIndex], entryValue.text])

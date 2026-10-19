@@ -26,12 +26,12 @@
         "path": "experiments/omarchy-agent-entry"
       },
       "verification": {
-        "python_tests": "passed-24-isolated-tests-on-python-3.9.6",
+        "python_tests": "passed-37-on-macos-python3.9.6-2026-10-19",
         "manifest": "passed-official-validator-cce8b1c971df64a7610b818ff8819e4bea04584a",
-        "qml_render": "passed-PySide6-Essentials-6.7.3-offscreen-software-on-macos",
+        "qml_render": "passed-en-zh-qtquick-offscreen-pyside6.7.3-2026-10-19; not-quickshell-runtime",
         "linux_installation": "pending",
         "omarchy_runtime": "pending",
-        "standalone_export": "passed-13-allowlisted-files-and-official-manifest"
+        "standalone_export": "passed-15-allowlisted-files-and-official-manifest-validation-2026-10-19"
       },
       "distribution": {
         "canonical_source": "monorepo-subdirectory",
@@ -45,7 +45,9 @@
         "DashboardContent.qml",
         "EntryButton.qml",
         "EntryField.qml",
+        "I18n.js",
         "agent_entry.py",
+        "i18n.py",
         "install.py",
         "LICENSE",
         "NOTICE",

@@ -1,6 +1,8 @@
+// Modified 2026-10-19: persistent language and localized async feedback. Apache-2.0; see ORIGIN.md.
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "I18n.js" as I18n
 
 Item {
     id: root
@@ -17,15 +19,15 @@ Item {
     }
     function close() { window.visible = false }
     function refresh() {
-        if (statusProcess.running) return
+        if (statusProcess.running || actionProcess.running) return
         statusError = ""
         statusProcess.command = ["python3", helper, "status"]
         statusProcess.running = true
     }
     function act(args) {
-        if (actionProcess.running) return
+        if (actionProcess.running || statusProcess.running) return
         actionError = ""
-        content.message = "正在处理…"
+        content.message = ""
         actionProcess.command = ["python3", helper].concat(args)
         actionProcess.running = true
     }
@@ -36,13 +38,14 @@ Item {
             onStreamFinished: {
                 try {
                     var result = JSON.parse(text)
+                    if (result.language) content.language = result.language
                     if (result.error) content.message = result.error
                     else {
                         content.agents = result.agents
                         content.project = result.project
                         content.configPath = result.config
                     }
-                } catch (e) { content.message = "状态读取失败：" + String(e) }
+                } catch (e) { content.message = I18n.text(content.language, "status_error") + String(e) }
             }
         }
         stderr: StdioCollector { onStreamFinished: root.statusError = text }
@@ -56,9 +59,10 @@ Item {
             onStreamFinished: {
                 try {
                     var result = JSON.parse(text)
-                    content.message = result.error || result.message || "完成"
+                    if (result.language) content.language = result.language
+                    content.message = result.error || result.message || I18n.text(content.language, "done")
                     if (result.project) content.project = result.project
-                } catch (e) { content.message = "操作返回格式异常：" + String(e) }
+                } catch (e) { content.message = I18n.text(content.language, "action_error") + String(e) }
             }
         }
         stderr: StdioCollector { onStreamFinished: root.actionError = text }
@@ -71,7 +75,7 @@ Item {
 
     FloatingWindow {
         id: window
-        title: "ANOLISA · Agent 入口"
+        title: I18n.text(content.language, "window_title")
         visible: false
         implicitWidth: 1160
         implicitHeight: 740

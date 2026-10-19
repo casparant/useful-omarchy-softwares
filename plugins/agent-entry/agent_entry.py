@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local Agent launcher and package guidance. No software installer."""
 
-# Modified 2026-10-17: standalone migration, package guidance, separate GUI/CLI detection.
+# Modified 2026-10-19: persistent Chinese/English preferences and localized launcher output.
 # Original Apache-2.0 source and revision are recorded in ORIGIN.md.
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import importlib.util
 import os
 import re
 import shlex
@@ -23,6 +24,28 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent
 PLUGIN_ID = "anolisa.agent-entry"
+
+# Load the sibling module by path: standalone exports and spec-based tests do not
+# require modifying sys.path or importing an unrelated globally installed i18n.
+_i18n_spec = importlib.util.spec_from_file_location("agent_entry_i18n", ROOT / "i18n.py")
+_i18n = importlib.util.module_from_spec(_i18n_spec)
+_i18n_spec.loader.exec_module(_i18n)
+
+
+def language_settings() -> dict[str, str]:
+    """Read only the optional language field; never recurse through config errors."""
+    preference = "auto"
+    try:
+        data = json.loads(config_path().read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data.get("language", "auto") in _i18n.PREFERENCES:
+            preference = data.get("language", "auto")
+    except (OSError, ValueError):
+        pass
+    return {"language": _i18n.resolve_language(preference), "languagePreference": preference}
+
+
+def tr(zh: str, en: str) -> str:
+    return _i18n.translate(zh, en, language_settings()["language"])
 
 
 def config_path() -> Path:
@@ -59,7 +82,7 @@ def catalog() -> list[dict[str, Any]]:
             name="cosh-ng",
             kind="terminal",
             candidates=["cosh-ng", "cosh"],
-            subtitle="ANOLISA 交互终端",
+            subtitle=tr("ANOLISA 交互终端", "Interactive terminal"),
             docs="https://github.com/casparant/ANOLISA",
         ),
         dict(
@@ -67,7 +90,7 @@ def catalog() -> list[dict[str, Any]]:
             name="Qoder",
             kind="gui",
             candidates=["qoder-desktop", "Qoder"],
-            subtitle="图形客户端 · 独立 Arch 配方",
+            subtitle=tr("图形客户端 · 独立 Arch 配方", "Desktop app · Arch package recipe"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qoder-bin/README.md",
         ),
         dict(
@@ -75,7 +98,7 @@ def catalog() -> list[dict[str, Any]]:
             name="Qoder IDE",
             kind="gui",
             candidates=["qoder-ide", "QoderIDE"],
-            subtitle="代码编辑器 · 独立 Arch 配方",
+            subtitle=tr("代码编辑器 · 独立 Arch 配方", "Code editor · Arch package recipe"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qoder-ide-bin/README.md",
         ),
         dict(
@@ -83,7 +106,7 @@ def catalog() -> list[dict[str, Any]]:
             name="Qoder CLI",
             kind="terminal",
             candidates=["qodercli"],
-            subtitle="独立终端入口",
+            subtitle=tr("独立终端入口", "Native terminal launcher"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qodercli-bin/README.md",
         ),
         dict(
@@ -91,7 +114,7 @@ def catalog() -> list[dict[str, Any]]:
             name="Codex CLI",
             kind="terminal",
             candidates=["codex"],
-            subtitle="终端版 · 非桌面客户端",
+            subtitle=tr("终端版 · 非桌面客户端", "Command-line agent"),
             docs="https://github.com/openai/codex",
         ),
         dict(
@@ -99,7 +122,7 @@ def catalog() -> list[dict[str, Any]]:
             name="QoderWake",
             kind="wake",
             candidates=["qoderwake"],
-            subtitle="Linux 服务 + Web Console",
+            subtitle=tr("Linux 服务 + Web Console", "Linux service + web console"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qoderwake-bin/README.md",
         ),
     ]
@@ -107,9 +130,9 @@ def catalog() -> list[dict[str, Any]]:
 
 def valid_argv(value: object) -> list[str]:
     if not isinstance(value, list) or not value or len(value) > 64:
-        raise ValueError('启动命令必须是非空 JSON 字符串数组，例如 ["cosh-ng"]')
+        raise ValueError(tr('启动命令必须是非空 JSON 字符串数组，例如 ["cosh-ng"]', "The launch command must be a nonempty JSON array of strings, e.g. [\"cosh-ng\"]"))
     if any(not isinstance(v, str) or not v or "\0" in v or "\n" in v or "\r" in v for v in value):
-        raise ValueError("命令参数不能包含空值、换行或 NUL")
+        raise ValueError(tr("命令参数不能包含空值、换行或 NUL", "Command arguments cannot be empty or contain newlines or NUL"))
     return value
 
 
@@ -121,9 +144,9 @@ def valid_url(value: str) -> str:
         or parsed.username
         or parsed.password
     ):
-        raise ValueError("仅接受不含用户名/密码的 http(s) URL")
+        raise ValueError(tr("仅接受不含用户名/密码的 http(s) URL", "Use an http(s) URL without a username or password"))
     if any(c in value for c in ("\n", "\r", "\0")):
-        raise ValueError("URL 包含非法字符")
+        raise ValueError(tr("URL 包含非法字符", "The URL contains an invalid character"))
     return value
 
 
@@ -131,13 +154,18 @@ def load_config() -> dict[str, Any]:
     path = config_path()
     if not path.exists():
         return {"version": 1, "project": str(Path.home()), "agents": []}
-    data = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError(tr("配置不是有效 JSON：", "Invalid JSON configuration: ") + str(error)) from error
     if (
         not isinstance(data, dict)
         or data.get("version") != 1
         or not isinstance(data.get("agents", []), list)
     ):
-        raise ValueError("配置格式错误；请检查 " + str(path))
+        raise ValueError(tr("配置格式错误；请检查 ", "Invalid configuration; check ") + str(path))
+    if data.get("language", "auto") not in _i18n.PREFERENCES:
+        raise ValueError(tr("language 必须是 auto、en 或 zh", "language must be auto, en or zh"))
     return data
 
 
@@ -158,7 +186,7 @@ def save_config(data: dict[str, Any]) -> None:
 def project_dir(value: str | None) -> Path:
     path = Path(value or load_config().get("project", str(Path.home()))).expanduser().resolve()
     if not path.is_dir():
-        raise ValueError("项目目录不存在：" + str(path))
+        raise ValueError(tr("项目目录不存在：", "Project folder does not exist: ") + str(path))
     return path
 
 
@@ -169,22 +197,22 @@ def agents() -> list[dict[str, Any]]:
         if not isinstance(item, dict) or not re.fullmatch(
             r"local\.[a-z0-9_-]+", item.get("id", "")
         ):
-            raise ValueError("自定义入口 id 必须使用 local. 前缀")
+            raise ValueError(tr("自定义入口 id 必须使用 local. 前缀", "Custom entry IDs must start with local."))
         if item["id"] in seen:
-            raise ValueError("重复的入口 id：" + item["id"])
+            raise ValueError(tr("重复的入口 id：", "Duplicate entry ID: ") + item["id"])
         if item.get("kind") not in ("terminal", "gui", "web"):
-            raise ValueError("未知入口类型")
+            raise ValueError(tr("未知入口类型", "Unknown entry type"))
         if item["kind"] == "web":
             valid_url(item.get("url", ""))
         else:
             valid_argv(item.get("argv"))
         items.append(
-            dict(item, subtitle=item.get("subtitle", "自定义入口"), docs="")
+            dict(item, subtitle=item.get("subtitle", tr("自定义入口", "Custom entry")), docs="")
         )
         seen.add(item["id"])
     overrides = load_config().get("commands", {})
     if not isinstance(overrides, dict):
-        raise ValueError("commands 必须是对象")
+        raise ValueError(tr("commands 必须是对象", "commands must be an object"))
     for item in items:
         if item["id"] in overrides:
             item["argv"] = valid_argv(overrides[item["id"]])
@@ -195,7 +223,7 @@ def get_agent(agent_id: str) -> dict[str, Any]:
     for item in agents():
         if item["id"] == agent_id:
             return item
-    raise ValueError("未知 Agent：" + agent_id)
+    raise ValueError(tr("未知 Agent：", "Unknown agent: ") + agent_id)
 
 
 def command_for(item: dict[str, Any]) -> list[str] | None:
@@ -230,18 +258,19 @@ def snapshot() -> dict[str, Any]:
         item.update(
             available=ready,
             status=(
-                "Web 入口已配置"
+                tr("Web 入口已配置", "Web entry configured")
                 if item["kind"] == "web"
-                else "启动入口已发现" if ready else "尚未发现启动入口"
+                else tr("启动入口已发现", "Ready to launch") if ready else tr("尚未发现启动入口", "Launcher not found")
             ),
         )
         # Presence can be a mise lazy launcher; it is not proof of auth or installation.
         output.append(item)
     return {
+        **language_settings(),
         "agents": output,
         "project": str(project_dir(None)),
         "config": str(config_path()),
-        "note": "检测只确认启动入口，不读取凭据，也不代表已经登录或任务正在运行。",
+        "note": tr("检测只确认启动入口，不读取凭据，也不代表已经登录或任务正在运行。", "Detection checks launchers only. It does not read credentials or confirm sign-in or running tasks."),
     }
 
 
@@ -281,7 +310,7 @@ def terminal_argv(payload: list[str], cwd: Path) -> list[str]:
         if name == "alacritty":
             return [binary, "--working-directory", str(cwd), "-e"] + payload
         return [binary, "-title", "ANOLISA · Terminal", "-e"] + payload
-    raise ValueError("没有找到 foot / kitty / alacritty / xterm 终端")
+    raise ValueError(tr("没有找到 foot / kitty / alacritty / xterm 终端", "No supported terminal found (foot / kitty / alacritty / xterm)"))
 
 
 def open_terminal(payload: list[str], cwd: Path) -> None:
@@ -296,7 +325,7 @@ def open_url(url: str) -> None:
     valid_url(url)
     opener = which("xdg-open")
     if not opener:
-        raise ValueError("没有找到 xdg-open")
+        raise ValueError(tr("没有找到 xdg-open", "xdg-open was not found"))
     detach([opener, url])
 
 
@@ -307,33 +336,33 @@ def launch(agent_id: str, directory: str | None = None) -> str:
         if not Path(shell).is_file():
             shell = "/bin/bash"
         open_terminal([shell], cwd)
-        return "已请求打开终端"
+        return tr("已请求打开终端", "Terminal launch requested")
     item = get_agent(agent_id)
     if item["kind"] == "web":
         open_url(item["url"])
-        return "已请求打开 Web 入口"
+        return tr("已请求打开 Web 入口", "Web entry launch requested")
     argv = command_for(item)
     if not argv:
-        raise ValueError(item["name"] + " 尚未发现启动入口，请安装或注册命令。")
+        raise ValueError(item["name"] + tr(" 尚未发现启动入口，请安装或注册命令。", " has no launcher. Install the app or register its command."))
     if item["kind"] in ("terminal", "wake"):
         open_terminal(helper_payload("session", agent_id, "--project", str(cwd)), cwd)
     else:
         detach(argv, cwd)
-    return "已发起启动请求；登录与实际运行请在原生界面确认。"
+    return tr("已发起启动请求；登录与实际运行请在原生界面确认。", "Launch requested. Complete sign-in and check the session in the app.")
 
 
 def session(agent_id: str, directory: str | None) -> None:
     item = get_agent(agent_id)
     argv = command_for(item)
     if not argv:
-        raise ValueError("启动命令不存在")
+        raise ValueError(tr("启动命令不存在", "The launch command was not found"))
     cwd = project_dir(directory)
-    print("ANOLISA · " + item["name"] + "\n工作目录：" + str(cwd), flush=True)
+    print("ANOLISA · " + item["name"] + tr("\n工作目录：", "\nProject folder: ") + str(cwd), flush=True)
     if item["kind"] == "wake":
         # Explicit action; no public listener, no login token reads, no stored credentials.
         if subprocess.run(argv + ["whoami"], cwd=cwd, env=env()).returncode != 0:
             if subprocess.run(argv + ["login"], cwd=cwd, env=env()).returncode != 0:
-                raise ValueError("QoderWake 登录未完成")
+                raise ValueError(tr("QoderWake 登录未完成", "QoderWake sign-in was not completed"))
         subprocess.run(
             argv + ["start", "--host", "127.0.0.1", "--open"], cwd=cwd, env=env(), check=True
         )
@@ -344,10 +373,10 @@ def session(agent_id: str, directory: str | None) -> None:
 
 def register(args: argparse.Namespace) -> str:
     if not re.fullmatch(r"[a-z0-9_-]{1,48}", args.id):
-        raise ValueError("id 只允许小写字母、数字、下划线和短横线")
+        raise ValueError(tr("id 只允许小写字母、数字、下划线和短横线", "IDs may contain lowercase letters, digits, underscores and hyphens only"))
     name = args.name.strip()
     if not name or len(name) > 80 or any(ord(c) < 32 for c in name):
-        raise ValueError("名称不能为空，最多 80 字符")
+        raise ValueError(tr("名称不能为空，最多 80 字符", "The name must contain between 1 and 80 characters"))
     item = {"id": "local." + args.id, "name": name, "kind": args.kind}
     if args.kind == "web":
         item["url"] = valid_url(args.value)
@@ -355,29 +384,29 @@ def register(args: argparse.Namespace) -> str:
         item["argv"] = valid_argv(json.loads(args.value))
     data = load_config()
     if any(x.get("id") == item["id"] for x in data.get("agents", [])):
-        raise ValueError("入口 id 已存在，请使用其他 id 或编辑配置")
+        raise ValueError(tr("入口 id 已存在，请使用其他 id 或编辑配置", "That entry ID already exists. Choose another ID or edit the configuration."))
     data.setdefault("agents", []).append(item)
     save_config(data)
-    return "入口已注册；启动时使用原生 Agent，不保存登录凭据。"
+    return tr("入口已注册；启动时使用原生 Agent，不保存登录凭据。", "Entry saved. It opens the native app and does not store sign-in credentials.")
 
 
 def wait_for_shell(action: str = "summon") -> str:
     binary = which("omarchy-shell")
     if not binary:
-        raise ValueError("未找到 omarchy-shell")
+        raise ValueError(tr("未找到 omarchy-shell", "omarchy-shell was not found"))
     for _ in range(30):
         result = subprocess.run(
             [binary, "shell", "ping"], capture_output=True, text=True, timeout=3
         )
         if result.returncode == 0 and "ok" in result.stdout:
             subprocess.run([binary, "shell", action, PLUGIN_ID, "{}"], check=True, timeout=5)
-            return "入口已打开"
+            return tr("入口已打开", "Agent Entry opened")
         time.sleep(1)
-    raise ValueError("Omarchy Shell 尚未就绪，稍后运行 agent-entry open 重试")
+    raise ValueError(tr("Omarchy Shell 尚未就绪，稍后运行 agent-entry open 重试", "Omarchy Shell is not ready. Try anolisa-agent-entry open again shortly."))
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=tr("本地 Agent 启动器与安装说明，不安装软件。", "Local agent launcher and package guidance. Does not install software."))
     sub = parser.add_subparsers(dest="action", required=True)
     sub.add_parser("status")
     sub.add_parser("open")
@@ -389,6 +418,8 @@ def main() -> int:
         p.add_argument("--project")
     p = sub.add_parser("project")
     p.add_argument("directory")
+    p = sub.add_parser("language")
+    p.add_argument("preference", choices=_i18n.PREFERENCES)
     p = sub.add_parser("register")
     p.add_argument("id")
     p.add_argument("name")
@@ -405,15 +436,20 @@ def main() -> int:
             result = {"message": launch(args.id, args.project)}
         elif args.action == "session":
             session(args.id, args.project)
-            result = {"message": "会话已结束"}
+            result = {"message": tr("会话已结束", "Session ended")}
         elif args.action == "docs":
             open_url(get_agent(args.id)["docs"])
-            result = {"message": "已打开安装与使用说明"}
+            result = {"message": tr("已打开安装与使用说明", "Installation and usage guide opened")}
         elif args.action == "project":
             data = load_config()
             data["project"] = str(project_dir(args.directory))
             save_config(data)
-            result = {"message": "项目目录已保存", "project": data["project"]}
+            result = {"message": tr("项目目录已保存", "Project folder saved"), "project": data["project"]}
+        elif args.action == "language":
+            data = load_config()
+            data["language"] = args.preference
+            save_config(data)
+            result = {"message": tr("语言偏好已保存", "Language preference saved")}
         elif args.action == "register":
             result = {"message": register(args)}
         else:
@@ -423,15 +459,16 @@ def main() -> int:
             editor = shlex.split(os.environ.get("EDITOR", "nano"))
             valid_argv(editor)
             open_terminal(editor + [str(config_path())], project_dir(None))
-            result = {"message": "已打开配置编辑器"}
+            result = {"message": tr("已打开配置编辑器", "Configuration editor opened")}
+        result.update(language_settings())
         print(json.dumps(result, ensure_ascii=False), flush=True)
         code = 0
     except (ValueError, OSError, subprocess.SubprocessError, json.JSONDecodeError) as error:
-        print(json.dumps({"error": str(error)}, ensure_ascii=False), flush=True)
+        print(json.dumps({"error": str(error), **language_settings()}, ensure_ascii=False), flush=True)
         code = 1
     if in_terminal and sys.stdin.isatty():
         try:
-            input("\n按 Enter 关闭此终端。")
+            input(tr("\n按 Enter 关闭此终端。", "\nPress Enter to close this terminal."))
         except EOFError:
             pass
     return code
