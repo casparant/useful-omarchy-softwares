@@ -4,6 +4,57 @@
 
 当前以 QoderWake 为首包，扩展到 Qoder CLI、桌面版和 IDE；钉钉复用已有 Omarchy 配方。这里保存配方和自己编写的辅助代码，第三方软件在构建时从官方地址下载。
 
+## Quickstart
+
+在 **Omarchy 图形会话的普通用户终端**执行，需要 Python 3.9+ 和 sudo。首次获取代码：
+
+```bash
+git clone https://github.com/casparant/useful-omarchy-softwares.git
+cd useful-omarchy-softwares
+```
+
+**一条命令装面板：**
+
+```bash
+./omarchy-tools panel
+```
+
+**一条命令装软件：**
+
+```bash
+./omarchy-tools install qoderwake
+```
+
+面板会部署并打开；软件安装完成后，按对应包说明首次登录与启动。脚本会准备所需系统依赖，并保留 pacman 的交互确认；整个脚本用普通用户运行，系统包操作才调用 sudo。安装面板需要带 Quickshell 插件接口的 Omarchy 和 `omarchy-shell`，不支持该接口的旧版 Omarchy 需先升级。
+
+更多操作都走同一个入口：
+
+```bash
+./omarchy-tools list                             # 查看软件、架构和安装来源
+./omarchy-tools install qoderwake qodercli         # 双架构软件，可一次选择多个
+./omarchy-tools install qoder qoder-ide            # 桌面版和 IDE，目前仅 x86_64
+./omarchy-tools install dingtalk                   # 使用已配置的 Omarchy 软件源
+./omarchy-tools panel --autostart                 # 首次安装，并在登录后显示面板
+./omarchy-tools panel --replace                   # 更新面板，旧文件先备份
+./omarchy-tools panel --uninstall                 # 卸载面板，保留配置与备份
+./omarchy-tools remove qoderwake                  # pacman 卸载软件，保留用户数据
+./omarchy-tools --help
+```
+
+软件名也可用完整包名，例如 `qoderwake-bin`、`qodercli-bin`、`dingtalk-bin`。所有选择会在安装前检查；ARM 上选择仅支持 x86_64 的软件会提前报错。钉钉若不在当前已配置的软件源中，会给出[现有渠道说明](docs/software/dingtalk.md)。
+
+拉取仓库更新后，重新部署面板或更新需要的软件：
+
+```bash
+git pull --ff-only
+./omarchy-tools panel --replace
+./omarchy-tools update qoderwake qodercli
+```
+
+`update` 与 `install` 使用相同流程：本地 Qoder 配方以当前 checkout 固定的版本校验来源、干净重建并通过 pacman 安装；钉钉使用 Omarchy 当前软件源版本。实际安装版本以当前配方为准，旧 checkout 可能导致重装或降级，安装前留意 pacman 确认信息。批量安装中途失败会停止，先前已完成的安装会保留，可在处理错误后只重试未完成的软件。面板更新不更新应用。卸载 Wake 前先按[包说明](pkgbuilds/qoderwake-bin/README.md)停止已运行的 daemon 或用户服务。
+
+本地配方与面板仍处于候选阶段；快捷入口的自动化测试不代表已完成 Omarchy 实机验收，具体验证状态见下方目录与各组件说明。脚本按自身路径定位仓库，也可以从其他目录通过绝对路径调用。
+
 ## 软件目录
 
 | 软件 | 本地配方 | 架构 | 进度 |
@@ -58,6 +109,7 @@ python3 -m unittest discover -s plugins/agent-entry/tests -p 'test_*.py' -v
 ## 仓库结构
 
 ```text
+omarchy-tools              显眼的统一入口：面板、软件安装、更新与卸载
 catalog.json               软件、来源、维护归属、验证状态
 pkgbuilds/<pkgbase>/        独立 PKGBUILD、.SRCINFO、辅助文件、包说明
   .omarchy/package.json    Omarchy 上游更新配置，候选阶段手动 hold

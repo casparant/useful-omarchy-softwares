@@ -33,13 +33,17 @@ plugins/
 
 ## 本地部署
 
-先读对应插件 README。Agent Entry 的本地部署命令，在本仓库根目录、目标 Omarchy 的普通用户终端中执行：
+先读对应插件 README。在本仓库根目录、目标 Omarchy 的普通用户终端中，使用统一入口部署 Agent Entry：
 
 ```bash
-python3 plugins/agent-entry/install.py
-# 可选：登录桌面后显示 Dashboard
-python3 plugins/agent-entry/install.py --replace --autostart
+./omarchy-tools panel
+# 更新并在登录桌面后显示 Dashboard
+./omarchy-tools panel --replace --autostart
+# 卸载，保留配置和可恢复备份
+./omarchy-tools panel --uninstall
 ```
+
+统一入口准备 `jq` / `xdg-utils`，再调用自包含的插件安装器；更多软件操作见根目录 [Quickstart](../README.md#quickstart)。独立导出的插件没有根目录入口，仍在导出目录执行 `python3 install.py`，具体参数见 [Agent Entry 说明](agent-entry/README.md)。
 
 安装器只部署插件及自身入口；软件安装按 `pkgbuilds` 文档另行完成。首次启动不自动安装应用、不代替应用登录。与此前相同 ID 的插件共用配置，覆盖升级会先备份旧插件。
 

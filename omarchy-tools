@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""仓库操作入口：部署面板，或通过 makepkg / Omarchy 安装目录中的软件。"""
+import argparse
+import json
+import os
+import platform
+import shlex
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "tools"))
+from repo_lib import NAME, read_srcinfo, recipe_dir
+
+
+def run(command, cwd=None):
+    print("+ " + shlex.join([str(part) for part in command]), flush=True)
+    subprocess.run(command, cwd=cwd, check=True)
+
+
+def require_commands(*names):
+    for name in names:
+        if not shutil.which(name):
+            raise ValueError("未找到命令 " + name + "；请在完整的 Arch / Omarchy 环境中运行。")
+
+
+def require_target():
+    if sys.platform != "linux":
+        raise ValueError("安装、更新和卸载需在目标 Arch Linux / Omarchy 上执行。")
+    if os.geteuid() == 0:
+        raise ValueError("请使用普通用户运行此脚本，不要 sudo；系统包操作会单独请求 sudo。")
+    require_commands("pacman")
+
+
+def machine_arch():
+    machine = platform.machine().lower()
+    return {"amd64": "x86_64", "arm64": "aarch64"}.get(machine, machine)
+
+
+def software_entries():
+    return json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))["software"]
+
+
+def select_software(names):
+    """Resolve catalog IDs / package aliases and read metadata without executing recipes."""
+    aliases = {}
+    for item in software_entries():
+        base = Path(item["recipe"]).name if item.get("recipe") else item.get("install", {}).get("package")
+        for alias in {item["id"], base} - {None}:
+            if not NAME.fullmatch(alias) or (alias in aliases and aliases[alias] != item):
+                raise ValueError("软件目录存在无效或重复名称：" + str(alias))
+            aliases[alias] = item
+    selected, seen = [], set()
+    for name in names:
+        if name not in aliases:
+            raise ValueError("未知软件：" + name + "；用 ./omarchy-tools list 查看可选项。")
+        item = dict(aliases[name])
+        if item["id"] in seen:
+            continue
+        seen.add(item["id"])
+        if item.get("recipe"):
+            base = Path(item["recipe"]).name
+            if item["recipe"] != "pkgbuilds/" + base:
+                raise ValueError("配方路径必须位于 pkgbuilds/<pkgbase>。")
+            directory = recipe_dir(base, ROOT)
+            fields = read_srcinfo(directory / ".SRCINFO")
+            if fields["pkgbase"] != [base] or not NAME.fullmatch(fields["pkgname"][0]):
+                raise ValueError("配方目录与 .SRCINFO 包名不一致：" + base)
+            if set(fields["arch"]) != set(item["architectures"]):
+                raise ValueError("catalog 与 .SRCINFO 架构不一致：" + base)
+            if not (directory / "PKGBUILD").is_file():
+                raise ValueError("配方缺少 PKGBUILD：" + base)
+            item["directory"] = directory
+            item["package"] = fields["pkgname"][0]
+        else:
+            install = item.get("install", {})
+            if install.get("method") != "omarchy" or not NAME.fullmatch(install.get("package", "")):
+                raise ValueError("尚无受支持的安装方式：" + item["id"])
+            item["package"] = install["package"]
+        selected.append(item)
+    return selected
+
+
+def install_software(names, remove=False):
+    require_target()
+    selected = select_software(names)
+    if remove:
+        require_commands("sudo")
+        run(["sudo", "pacman", "-R"] + [item["package"] for item in selected])
+        print("软件已卸载；用户目录中的账号、项目和配置由应用保留。")
+        return
+    arch = machine_arch()
+    for item in selected:
+        if arch not in item["architectures"] and "any" not in item["architectures"]:
+            raise ValueError("{} 不支持当前架构 {}；配方声明：{}。".format(
+                item["name"], arch, ", ".join(item["architectures"])))
+    local = [item for item in selected if item.get("recipe")]
+    external = [item for item in selected if not item.get("recipe")]
+    if local:
+        require_commands("sudo", "makepkg")
+    if external:
+        require_commands("omarchy")
+        for item in external:
+            try:
+                run(["pacman", "-Si", item["package"]])
+            except subprocess.CalledProcessError:
+                raise ValueError("{} 当前不在已配置软件源中；请查看 {}。".format(
+                    item["package"], item["documentation"])) from None
+    if local:
+        run(["sudo", "pacman", "-S", "--needed", "base-devel"])
+    for item in selected:
+        print("\n安装 {}；说明：{}".format(item["name"], ROOT / item["documentation"]), flush=True)
+        if item.get("recipe"):
+            run(["makepkg", "--syncdeps", "--install", "--cleanbuild", "--force"], cwd=item["directory"])
+        else:
+            run(["omarchy", "pkg", "add", item["package"]])
+    print("\n安装完成。首次登录与启动方法见上面的软件说明。")
+
+
+def install_panel(args):
+    require_target()
+    require_commands("omarchy", "omarchy-shell")
+    command = [sys.executable, str(ROOT / "plugins/agent-entry/install.py")]
+    for flag in ("autostart", "replace", "uninstall"):
+        if getattr(args, flag):
+            command.append("--" + flag)
+    if not args.uninstall:
+        require_commands("sudo")
+        run(["sudo", "pacman", "-S", "--needed", "jq", "xdg-utils"])
+    run(command, cwd=ROOT)
+
+
+def list_software():
+    print("软件名（也可用括号里的包名）  架构  安装来源")
+    for item in software_entries():
+        base = Path(item["recipe"]).name if item.get("recipe") else item.get("install", {}).get("package", "暂无")
+        source = "本地候选配方" if item.get("recipe") else "Omarchy 已配置软件源"
+        print("{} ({})  {}  {}".format(item["id"], base, "/".join(item["architectures"]), source))
+    print("\n面板：./omarchy-tools panel；详细验证状态见 catalog.json 和各软件 README。")
+
+
+def parser():
+    p = argparse.ArgumentParser(description=__doc__, epilog="使用普通用户运行。完整用法与候选验证状态见 README.md 的 Quickstart。")
+    commands = p.add_subparsers(dest="action", required=True)
+    commands.add_parser("list", help="查看可安装软件、架构和来源")
+    panel = commands.add_parser("panel", help="安装 Agent Entry 面板；需在 Omarchy 图形会话中运行")
+    panel.add_argument("--autostart", action="store_true", help="登录桌面后显示面板")
+    mode = panel.add_mutually_exclusive_group()
+    mode.add_argument("--replace", action="store_true", help="备份已有插件后更新")
+    mode.add_argument("--uninstall", action="store_true", help="卸载插件，保留配置与可恢复备份")
+    for name, help_text in (("install", "安装指定软件"), ("update", "用当前 checkout 的固定版本重建/更新指定软件"), ("remove", "通过 pacman 卸载指定软件，保留用户数据")):
+        command = commands.add_parser(name, help=help_text)
+        command.add_argument("software", nargs="+", metavar="NAME", help="目录中的软件名或包名；支持多个")
+    return p
+
+
+def main(argv=None):
+    p = parser()
+    args = p.parse_args(argv)
+    if args.action == "panel" and args.uninstall and args.autostart:
+        p.error("--uninstall 不能与 --autostart 同用。")
+    try:
+        if args.action == "list":
+            list_software()
+        elif args.action == "panel":
+            install_panel(args)
+        else:
+            install_software(args.software, remove=args.action == "remove")
+    except (ValueError, OSError) as error:
+        print("错误：" + str(error), file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError as error:
+        print("命令未完成（退出码 {}），已停止；请处理上面的错误后重试。".format(error.returncode), file=sys.stderr)
+        return error.returncode if error.returncode > 0 else 1
+    except KeyboardInterrupt:
+        print("\n操作已取消。", file=sys.stderr)
+        return 130
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

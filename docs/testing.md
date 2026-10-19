@@ -24,6 +24,26 @@
 
 在 Linux 中执行 `makepkg --verifysource`。对本地包装器检查 Bash 语法；有 ShellCheck 时检查包装器，但注意 PKGBUILD 的专用变量和数组不能机械地按普通脚本警告处理。
 
+## 统一操作入口
+
+根目录 `omarchy-tools` 的回归测试随 `python3 -m unittest discover -s tests -v` 执行。测试覆盖：从其他工作目录调用、ID 与包名别名、全批架构/名称预检、普通用户限制、makepkg 与 Omarchy 分派、面板参数转发、失败停止及卸载范围。测试替代外部安装命令，不执行 pacman、厂商程序或桌面操作，不能据此标记软件运行通过。
+
+在每种目标架构的可恢复 Omarchy 环境中，另外验收以下流程并记录结果：
+
+```bash
+./omarchy-tools list
+./omarchy-tools panel
+./omarchy-tools install qoderwake qodercli
+./omarchy-tools update qoderwake qodercli
+./omarchy-tools install dingtalk
+./omarchy-tools panel --replace --autostart
+./omarchy-tools panel --uninstall
+# 先按包说明停止 Wake 的 daemon 或用户服务
+./omarchy-tools remove qoderwake qodercli
+```
+
+确认依赖安装和 pacman 提示可正常交互；ARM 上安装 `qoder` / `qoder-ide` 应在任何安装操作前拒绝；软件源中没有钉钉时应给出渠道说明。面板动作还需按[插件验收流程](../plugins/README.md#检查与验收)确认顶栏、备份及登录钩子。2026-10-19 在 macOS / Python 3.9.6 上通过入口测试 17 项、根目录测试合计 80 项和插件测试 24 项；软件包与插件静态检查通过。以上 Linux / Omarchy 安装流程仍待目标机执行。
+
 ## 隔离构建与双架构
 
 在 Arch Linux 上安装 `base-devel`、`devtools`、`namcap`；x86_64 推荐在干净 chroot 中构建：

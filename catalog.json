@@ -134,7 +134,11 @@
         "channel_availability": "check-on-target-system",
         "omarchy_runtime": "pending"
       },
-      "binary_redistribution": "not-evaluated; no local binary distribution"
+      "binary_redistribution": "not-evaluated; no local binary distribution",
+      "install": {
+        "method": "omarchy",
+        "package": "dingtalk-bin"
+      }
     }
   ]
 }
