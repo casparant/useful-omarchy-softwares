@@ -2,7 +2,7 @@
 
 <!-- Modified 2026-10-19: bilingual UI, persisted language choice and English demonstration setup. -->
 
-通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.5.0**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
+通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.5.1**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
 
 源码来自公开 ANOLISA 实验，采用 **Apache-2.0**；详见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和固定版本的[来源与修改记录](ORIGIN.md)。本目录不适用仓库原创代码的 0BSD 许可。
 
@@ -45,7 +45,7 @@ Tokenless 请求重试后的命令仍要经过安全检查与原生权限；不�
 - 分别检测和启动 Qoder Desktop 与 Qoder IDE；Qoder CLI 只探测 `qodercli`，避免把 GUI 的 `qoder` 命令认作 CLI。
 - GUI 应用已在运行时，「打开」请合成器把现有窗口切到前台，不再重复发起进程撞单实例锁导致毫无反应。
 - 添加自定义终端命令、GUI 命令或 Web URL；命令存为参数数组。
-- 缺少应用时，「安装说明」按钮在浏览器中打开对应配方说明或官方指南。面板不下载、构建或安装应用。
+- 缺少应用时分两种动作：目录里有对应软件、且能发现 `omarchy-tools` 时，「安装」在你的终端里调用它构建本地配方（执行的命令与 `sudo` 提示都出现在那个窗口，面板不代答、不静默提权）；否则「安装说明」在浏览器中打开对应配方说明或官方指南。面板不下载厂商脚本、不做包格式转换，也不会绕过目录自己装东西。
 
 | 入口 | 默认检测方式 | 安装说明 |
 | --- | --- | --- |
@@ -56,13 +56,13 @@ Tokenless 请求重试后的命令仍要经过安全检查与原生权限；不�
 | Codex CLI | `codex` | [官方仓库](https://github.com/openai/codex) |
 | cosh-ng | `cosh-ng` / `cosh` | [ANOLISA](https://github.com/casparant/ANOLISA) |
 
-仓库里的 Qoder 配方仍是候选，尚未发布到 AUR 或 Omarchy 包源；安装与验证状态以对应包说明为准。应用文件由 pacman 管理，插件只负责启动和引导。旧原型自带的 DEB 转换器与厂商脚本下载器已移除。旧版安装到用户 npm 目录的 Codex 仍可被发现；该路径只作兼容回退，优先使用当前 PATH 中的版本，不再执行安装或更新。
+仓库里的 Qoder 配方仍是候选，尚未发布到 AUR 或 Omarchy 包源；安装与验证状态以对应包说明为准。应用文件由 pacman 管理，插件只负责启动、引导和把安装动作交给仓库 `omarchy-tools`，自身不装软件。旧原型自带的 DEB 转换器与厂商脚本下载器已移除。旧版安装到用户 npm 目录的 Codex 仍可被发现；该路径只作兼容回退，优先使用当前 PATH 中的版本，不再执行安装或更新。
 
 面板不保存或读取登录凭据。检测到命令只说明存在启动入口，不代表登录成功或程序可运行。登录在各应用原生界面完成。收起面板不会结束已打开的终端或应用。
 
 ## 在 Omarchy 上部署
 
-需要提供 Quickshell 插件接口的 Omarchy 桌面会话、`omarchy`、`omarchy-shell`、**Python 3.9+**、`xdg-open`，以及 foot / kitty / alacritty / xterm 中的一种终端。`gtk-launch` 可用于桌面文件启动；没有它时尝试表中的命令。软件本体需单独安装。
+需要提供 Quickshell 插件接口的 Omarchy 桌面会话、`omarchy`、`omarchy-shell`、**Python 3.9+**、`xdg-open`，以及 foot / kitty / alacritty / xterm 中的一种终端。`gtk-launch` 可用于桌面文件启动；没有它时尝试表中的命令。软件本体需单独安装。「安装」按钮额外要求能发现 `omarchy-tools`（命令名在 PATH 上，或由 `OMARCHY_TOOLS` 指向该脚本）；发现不到时卡片自动退回「安装说明」，其余功能不受影响。
 
 原型针对 Omarchy 4.0.1 开发。0.5.0 在 Omarchy ARM64 VM 验证，范围见下方测试与验收；x86_64 桌面仍需现场验收。
 
@@ -76,13 +76,14 @@ Tokenless 请求重试后的命令仍要经过安全检查与原生权限；不�
 
 如果使用独立导出目录，在其根目录直接执行 `python3 install.py`，无需根目录工具；升级使用 `python3 install.py --replace`，登录后显示使用 `--autostart`。
 
-安装器先执行官方 `omarchy plugin validate`，再复制本目录的明确文件清单、注册菜单入口并启用插件。部署文件自包含，不依赖源仓库上级目录，也不改变软件源或系统软件包。
+安装器先执行官方 `omarchy plugin validate`，再复制本目录的明确文件清单、注册菜单入口并启用插件。运行中的插件自包含，不读取源仓库位置；安装器另外尝试把上一级目录的 `omarchy-tools` 链接到 `~/.local/bin/omarchy-tools` 供「安装」按钮发现，该位置已有文件或已指向别处时一律保留不动，卸载只回收自己创建的这一条链接。两种方式都不改变软件源或系统软件包。
 
 | 内容 | 默认位置 |
 | --- | --- |
 | 插件 | `~/.config/omarchy/plugins/anolisa.agent-entry/` |
 | 命令入口 | `~/.local/bin/anolisa-agent-entry` |
 | 应用菜单入口 | `~/.local/share/applications/anolisa-agent-entry.desktop` |
+| 安装入口发现（可选，仅由安装器创建） | `~/.local/bin/omarchy-tools` |
 | 可选登录钩子 | `~/.config/omarchy/hooks/post-boot.d/anolisa-agent-entry.sh` |
 | 项目与自定义入口 | `~/.config/anolisa/agent-entry.json` |
 | 升级、卸载备份 | `~/.config/anolisa/plugin-backups/` |
@@ -141,7 +142,14 @@ QoderWake 仅在点击后才尝试 `whoami`，需要时执行原生 `login`，�
 ~/.local/bin/anolisa-agent-entry register console "本地 Console" web 'http://127.0.0.1:19820'
 ```
 
-终端工作目录使用项目目录。GUI 如果通过 `gtk-launch` 启动，由应用决定是否恢复项目；项目目录不代表通用 GUI 打开项目协议。插件不嵌入终端；AW 工作台只显示上述只读摘要。
+安装动作与终端类入口同构成对：`install` 只负责在你的终端里发起任务，`install-run` 才在那个终端中调用 `omarchy-tools install <软件名>` 并流式显示构建输出。目录里没有对应软件、或发现不到 `omarchy-tools` 时，两者都直接报错，不会退化成静默安装或改用别的来源。
+
+```bash
+~/.local/bin/anolisa-agent-entry install qoder-ide      # 打开终端开始安装
+~/.local/bin/anolisa-agent-entry install-run qoder-ide  # 终端内的实际构建步骤
+```
+
+终端工作目录使用项目目录。GUI 如果通过 `gtk-launch` 启动，由应用决定是否恢复项目；项目目录不代表通用 GUI 打开项目协议。插件不嵌入终端，安装与终端会话都在独立窗口中运行；AW 工作台只显示只读摘要。
 
 GUI 聚焦依赖 `omarchy hyprland focus app`（Hyprland 专用），匹配类名取自桌面文件的 `StartupWMClass` 并按 `^…$` 锚定。找不到该命令、没有桌面文件或窗口不存在时，退回原本的启动行为。注意 Omarchy 4 的 Hyprland 0.56 使用 Lua 配置，传统 `hyprctl dispatch <子命令> <参数>` 会被当作 Lua 源码而失败，正确形式是 `hyprctl dispatch 'hl.dsp.focus({ window = "address:…" })'`；这也是任何外部脚本在本机上聚焦窗口的通用坑。
 

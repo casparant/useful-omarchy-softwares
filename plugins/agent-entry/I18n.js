@@ -1,4 +1,5 @@
 // Modified 2026-10-19: English / Chinese interface text.
+// Modified 2026-10-20: install label and terminal-based installation footer.
 // Apache-2.0; see LICENSE, NOTICE and ORIGIN.md.
 .pragma library
 
@@ -77,9 +78,10 @@ var strings = {
         choose: "Choose an agent",
         agent_types: "Desktop apps / Terminal / Web",
         open: "Open",
+        install: "Install",
         install_guide: "Installation guide",
         guide: "Guide",
-        footer: "v0.5 · Guides open in your browser. Software is managed by pacman / makepkg. A detected launcher does not confirm sign-in.",
+        footer: "v0.5 · Install runs in a terminal through omarchy-tools; guides open in your browser. Software stays under pacman / makepkg. A detected launcher does not confirm sign-in.",
         edit_config: "Edit config",
         register_title: "Add an agent entry",
         entry_id: "Unique ID, e.g. my-cosh (lowercase, numbers, hyphens)",
@@ -166,9 +168,10 @@ var strings = {
         choose: "选择你的 Agent",
         agent_types: "图形客户端 / 终端 / Web",
         open: "打开",
+        install: "安装",
         install_guide: "安装说明",
         guide: "说明",
-        footer: "v0.5 · 安装说明在浏览器中打开，软件由 pacman / makepkg 管理。检测到命令不代表已经登录。",
+        footer: "v0.5 · 安装会在终端中调用仓库的 omarchy-tools 构建；说明文档在浏览器中打开。软件仍由 pacman / makepkg 管理。检测到命令不代表已经登录。",
         edit_config: "编辑配置",
         register_title: "添加 Agent 入口",
         entry_id: "唯一 ID，如 my-cosh（小写字母、数字、短横线）",

@@ -1,4 +1,5 @@
 # Modified 2026-10-19: cover bilingual deploy resources, desktop names and preserved installs.
+# Modified 2026-10-20: cover the omarchy-tools link and refusing to take over a foreign one.
 # Apache-2.0; see ../LICENSE, ../NOTICE and ../ORIGIN.md.
 import importlib.util
 import tempfile
@@ -35,6 +36,23 @@ class InstallTest(unittest.TestCase):
     def invoke(self, *args: str) -> None:
         with patch.object(installer.sys, "argv", ["install.py", *args]):
             installer.main()
+
+    def test_repository_tools_are_linked_for_install_entries(self) -> None:
+        link = self.home / ".local/bin/omarchy-tools"
+        expected = installer.SOURCE.parent.parent / "omarchy-tools"
+        self.invoke()
+        self.assertTrue(link.is_symlink())
+        self.assertEqual(link.resolve(), expected.resolve())
+        self.invoke("--uninstall")
+        self.assertFalse(link.exists())
+
+    def test_foreign_tools_entry_is_never_taken_over(self) -> None:
+        link = self.home / ".local/bin/omarchy-tools"
+        link.parent.mkdir(parents=True)
+        link.write_text("#!/bin/sh\nforeign\n", encoding="utf-8")
+        self.invoke()
+        self.assertFalse(link.is_symlink())
+        self.assertEqual(link.read_text(encoding="utf-8"), "#!/bin/sh\nforeign\n")
 
     def test_install_and_recoverable_uninstall(self) -> None:
         other_hook = self.hook.parent / "unrelated.sh"

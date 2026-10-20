@@ -234,12 +234,59 @@ class EntryTest(unittest.TestCase):
                     browser.assert_called_once_with(docs)
                     run.assert_not_called()
 
-    def test_removed_install_actions_are_rejected(self) -> None:
+    def test_installable_flag_needs_missing_launcher_and_tools(self) -> None:
+        with patch.object(entry, "tools_launcher", return_value="/repo/omarchy-tools"), patch.object(
+            entry, "which", return_value=None
+        ):
+            states = {a["id"]: (a["available"], a["installable"]) for a in entry.snapshot()["agents"]}
+        self.assertEqual(states["qoderwake"], (False, True))
+        self.assertEqual(states["aw"], (False, True))
+        # cosh and codex are not in this repository's software catalog.
+        self.assertEqual(states["cosh"], (False, False))
+        self.assertEqual(states["codex"], (False, False))
+        with patch.object(entry, "tools_launcher", return_value=None), patch.object(
+            entry, "which", return_value=None
+        ):
+            self.assertFalse(any(a["installable"] for a in entry.snapshot()["agents"]))
+
+    def test_install_action_opens_terminal_with_argument_array(self) -> None:
+        lookup = lambda name: "/usr/bin/foot" if name == "foot" else None
+        with patch.object(entry, "tools_launcher", return_value="/repo/omarchy-tools"), patch.object(
+            entry, "which", side_effect=lookup
+        ), patch.object(entry.subprocess, "Popen") as spawn, patch.object(entry.subprocess, "run") as run:
+            message = entry.install("qoder-ide", self.temp.name)
+        payload = spawn.call_args.args[0]
+        self.assertEqual(payload[0], "/usr/bin/foot")
+        self.assertIn("-e", payload)
+        self.assertIn("install-run", payload)
+        self.assertIn("qoder-ide", payload)
+        self.assertNotIn("shell", spawn.call_args.kwargs)
+        run.assert_not_called()
+        self.assertIn("已在新终端中开始安装", message)
+
+    def test_install_run_delegates_to_repository_tools(self) -> None:
+        with patch.object(entry, "tools_launcher", return_value="/repo/omarchy-tools"), patch.object(
+            entry.subprocess, "run"
+        ) as run:
+            entry.install_run("qoder-cli", self.temp.name)
+        self.assertEqual(run.call_args.args[0], ["/repo/omarchy-tools", "install", "qodercli"])
+        self.assertTrue(run.call_args.kwargs["check"])
+        self.assertNotIn("shell", run.call_args.kwargs)
+
+    def test_install_rejects_unmapped_entry_and_missing_tools(self) -> None:
+        with patch.object(entry, "tools_launcher", return_value="/repo/omarchy-tools"):
+            with self.assertRaises(ValueError):
+                entry.install("codex", self.temp.name)
+        with patch.object(entry, "tools_launcher", return_value=None):
+            with self.assertRaises(ValueError):
+                entry.install("qoderwake", self.temp.name)
+
+    def test_install_subcommands_are_registered(self) -> None:
         for action in ("install", "install-run"):
-            with patch.object(entry.sys, "argv", ["agent_entry.py", action, "qoderwake"]):
+            with patch.object(entry.sys, "argv", ["agent_entry.py", action, "--help"]):
                 with self.assertRaises(SystemExit) as error:
                     entry.main()
-                self.assertEqual(error.exception.code, 2)
+            self.assertEqual(error.exception.code, 0, action)
 
     def test_legacy_codex_installation_is_still_discovered(self) -> None:
         home = Path(self.temp.name)

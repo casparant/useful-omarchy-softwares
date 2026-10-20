@@ -11,3 +11,4 @@ __pycache__/
 /pkgbuilds/*/*.deb
 /pkgbuilds/*/*.rpm
 *.log
+/pkgbuilds/*/*.part

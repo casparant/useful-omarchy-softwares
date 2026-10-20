@@ -1,6 +1,16 @@
 # Agent Entry 验证记录
 
-当前版本 0.5.0，保留 `anolisa.agent-entry` ID。公开来源与 Apache-2.0 声明见 [ORIGIN](../plugins/agent-entry/ORIGIN.md)。
+当前版本 0.5.1，保留 `anolisa.agent-entry` ID。公开来源、固定提交与 Apache-2.0 声明见 [ORIGIN](../plugins/agent-entry/ORIGIN.md)。0.3.0 及更早记录在 Darwin arm64 / Python 3.9.6 上产生；0.4.1 起补有 Omarchy `x86_64` 实机结果。
+
+## 2026-10-20 · 0.5.1 恢复安装动作
+
+- 变更：卡片在"未安装但目录中有对应软件"时显示「安装」，`install` 在用户终端中发起、`install-run` 在该终端里调用 `omarchy-tools install <软件名>` 流式构建；发现不到 `omarchy-tools` 时退回「安装说明」，`cosh` 这类不在目录中的入口保持原行为。
+- 有意撤销 0.2.0 的删除决定：当时唯一的安装路径是厂商 DEB 转换器与在线脚本，而 2026-10-19 加入的 `omarchy-tools` 提供的是只用固定本地配方、不执行厂商脚本的路径；插件自身仍不装软件，提权由用户在终端内确认。
+- 与 0.5.0 的 rebase 结果：`agent_entry.py` 仅 1 处冲突（qoder-cli 的 `install` 映射与其新副标题），`DashboardContent.qml`、`install.py`、`test_agent_entry.py`、`test_install.py` 自动合并；版本以 0.5.0 为基线记作 0.5.1。
+- Omarchy 实机（BUILD_ID 4.0.5 `x86_64`，Python 3.14.8）：合并 0.5.0 后插件回归 **65 项**（上游 59 项 + 本轮新增 6 项，覆盖 `installable` 判定、终端参数数组、`install-run` 委托、未映射入口与缺工具报错、子命令注册、`omarchy-tools` 链接与不覆盖已有文件）、仓库回归 **119 项**通过；`tools/check-plugin` 与官方 manifest 校验、`tools/check-package` 及 Arch 上的 `--require-makepkg`（6 份配方）全部通过。
+- 验证方法教训：`env()` 会把 `~/.local/bin` 前置回 PATH，因此剥掉 PATH 或改 `HOME` 都无法在实机模拟"工具缺失"分支，实跑时反而真的启动了 makepkg 构建（未装上任何包，进程与 `.part` 残留已清理）。该分支的正式覆盖方式是单元测试直接 patch `tools_launcher`。
+- 顺带修正：`.gitignore` 覆盖 `*.deb`/`*.tar.gz`/`src/`/`pkg/` 但不含 makepkg 中断下载留下的 `*.part`，未跟踪的厂商 tarball 分片因此可被误提交；已补 `/pkgbuilds/*/*.part`。
+- 尚未执行：一次由用户确认的完整安装验收，以及 Quickshell 面板内的真实点击链路。
 
 ## 2026-10-20 · 0.5.0 AW 工作台
 

@@ -1,4 +1,5 @@
 // Modified 2026-10-19: English/Chinese interface and persistent language action.
+// Modified 2026-10-20: third card action that installs catalog software in a terminal.
 // Apache-2.0; see LICENSE, NOTICE and ORIGIN.md.
 import QtQuick
 import QtQuick.Controls.Basic
@@ -155,11 +156,12 @@ Rectangle {
                                 EntryButton {
                                     objectName: "agentAction-" + card.modelData.id
                                     Layout.fillWidth: true
-                                    text: card.modelData.available ? root.t("open") : root.t("install_guide")
-                                    accent: card.modelData.available
-                                    enabled: !root.busy && (card.modelData.available || !!card.modelData.docs)
+                                    readonly property bool canInstall: !card.modelData.available && !!card.modelData.installable
+                                    text: card.modelData.available ? root.t("open") : canInstall ? root.t("install") : root.t("install_guide")
+                                    accent: card.modelData.available || canInstall
+                                    enabled: !root.busy && (card.modelData.available || canInstall || !!card.modelData.docs)
                                     onClicked: {
-                                        var action = card.modelData.available ? "launch" : "docs"
+                                        var action = card.modelData.available ? "launch" : canInstall ? "install" : "docs"
                                         root.actionRequested([action, card.modelData.id, "--project", projectField.text])
                                     }
                                 }

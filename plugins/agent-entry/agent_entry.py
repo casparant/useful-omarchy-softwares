@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Local Agent launcher and package guidance. No software installer."""
+"""Local agent launcher. Missing catalog software is built by omarchy-tools in the user's terminal."""
 
 # Modified 2026-10-19: persistent Chinese/English preferences and localized launcher output.
 # Modified 2026-10-20: focus an already-running GUI window instead of re-spawning into its own lock.
+# Modified 2026-10-20: restore install entries, delegating to the repository omarchy-tools.
 # Original Apache-2.0 source and revision are recorded in ORIGIN.md.
 
 from __future__ import annotations
@@ -87,6 +88,7 @@ def catalog() -> list[dict[str, Any]]:
             name="AW",
             kind="terminal",
             candidates=["/usr/bin/aw-launch"],
+            install="aw",
             subtitle=tr("Tokenless 压缩 · 可选安全检查", "Tokenless compression · optional security"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/aw-preview/README.md",
         ),
@@ -103,6 +105,7 @@ def catalog() -> list[dict[str, Any]]:
             name="Qoder",
             kind="gui",
             candidates=["qoder-desktop", "Qoder"],
+            install="qoder",
             subtitle=tr("图形客户端 · 独立 Arch 配方", "Desktop app · Arch package recipe"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qoder-bin/README.md",
         ),
@@ -111,6 +114,7 @@ def catalog() -> list[dict[str, Any]]:
             name="Qoder IDE",
             kind="gui",
             candidates=["qoder-ide", "QoderIDE"],
+            install="qoder-ide",
             subtitle=tr("代码编辑器 · 独立 Arch 配方", "Code editor · Arch package recipe"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qoder-ide-bin/README.md",
         ),
@@ -119,6 +123,7 @@ def catalog() -> list[dict[str, Any]]:
             name="Qoder CLI",
             kind="terminal",
             candidates=["qodercli"],
+            install="qodercli",
             subtitle=tr("直接启动，不经过 AW", "Direct launch, without AW"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qodercli-bin/README.md",
         ),
@@ -135,6 +140,7 @@ def catalog() -> list[dict[str, Any]]:
             name="QoderWake",
             kind="wake",
             candidates=["qoderwake"],
+            install="qoderwake",
             subtitle=tr("Linux 服务 + Web Console", "Linux service + web console"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qoderwake-bin/README.md",
         ),
@@ -261,18 +267,45 @@ def command_for(item: dict[str, Any]) -> list[str] | None:
     return None
 
 
+def tools_launcher() -> str | None:
+    """The repository CLI that builds its own recipes. No path is baked into the plugin."""
+    configured = os.environ.get("OMARCHY_TOOLS", "")
+    if configured:
+        path = Path(configured).expanduser()
+        return str(path) if path.is_file() and os.access(path, os.X_OK) else None
+    return which("omarchy-tools")
+
+
+def install_target(item: dict[str, Any]) -> str:
+    name = item.get("install")
+    if not name or not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", name):
+        raise ValueError(item["name"] + tr(
+            " 不在目录软件中，请查看其安装说明。", " is not a catalog software entry. Use its installation guide."
+        ))
+    if not tools_launcher():
+        raise ValueError(tr(
+            "未找到 omarchy-tools；从仓库运行它，或设置 OMARCHY_TOOLS 指向该脚本。",
+            "omarchy-tools was not found. Run it from the repository, or point OMARCHY_TOOLS at the script.",
+        ))
+    return str(name)
+
+
 def snapshot() -> dict[str, Any]:
     output = []
     for source in agents():
         item = copy.deepcopy(source)
         found = command_for(item)
         ready = item["kind"] == "web" or bool(found)
+        installable = bool(item.get("install")) and not ready and tools_launcher() is not None
         item.update(
             available=ready,
+            installable=installable,
             status=(
                 tr("Web 入口已配置", "Web entry configured")
                 if item["kind"] == "web"
-                else tr("启动入口已发现", "Ready to launch") if ready else tr("尚未发现启动入口", "Launcher not found")
+                else tr("启动入口已发现", "Ready to launch") if ready
+                else tr("未安装，可从此目录安装", "Not installed; installable from this repository") if installable
+                else tr("尚未发现启动入口", "Launcher not found")
             ),
         )
         # Presence can be a mise lazy launcher; it is not proof of auth or installation.
@@ -410,6 +443,28 @@ def launch(agent_id: str, directory: str | None = None) -> str:
     return tr("已发起启动请求；登录与实际运行请在原生界面确认。", "Launch requested. Complete sign-in and check the session in the app.")
 
 
+def install(agent_id: str, directory: str | None = None) -> str:
+    cwd = project_dir(directory)
+    item = get_agent(agent_id)
+    install_target(item)
+    # The terminal is the confirmation step: the exact command is visible there and
+    # makepkg / sudo prompts are answered by the user, never by this helper.
+    open_terminal(helper_payload("install-run", agent_id, "--project", str(cwd)), cwd)
+    return item["name"] + tr(
+        " 已在新终端中开始安装，进度与提权确认都在那个窗口。",
+        " installation started in a new terminal. Progress and elevation prompts stay in that window.",
+    )
+
+
+def install_run(agent_id: str, directory: str | None) -> None:
+    item = get_agent(agent_id)
+    name = install_target(item)
+    launcher = tools_launcher()
+    if not launcher:
+        raise ValueError(tr("未找到 omarchy-tools", "omarchy-tools was not found"))
+    subprocess.run([launcher, "install", name], cwd=project_dir(directory), env=env(), check=True)
+
+
 def session(agent_id: str, directory: str | None) -> None:
     item = get_agent(agent_id)
     argv = command_for(item)
@@ -465,13 +520,13 @@ def wait_for_shell(action: str = "summon") -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=tr("本地 Agent 启动器与安装说明，不安装软件。", "Local agent launcher and package guidance. Does not install software."))
+    parser = argparse.ArgumentParser(description=tr("本地 Agent 启动器；缺少的软件交给仓库 omarchy-tools 在你的终端中构建安装。", "Local agent launcher. Missing catalog software is built by the repository omarchy-tools in your own terminal."))
     sub = parser.add_subparsers(dest="action", required=True)
     sub.add_parser("status")
     sub.add_parser("open")
     sub.add_parser("toggle")
     sub.add_parser("edit-config")
-    for action in ("launch", "session", "docs"):
+    for action in ("launch", "session", "docs", "install", "install-run"):
         p = sub.add_parser(action)
         p.add_argument("id")
         p.add_argument("--project")
@@ -485,7 +540,7 @@ def main() -> int:
     p.add_argument("kind", choices=("terminal", "gui", "web"))
     p.add_argument("value", help='JSON argv, e.g. ["cosh-ng"], or a web URL')
     args = parser.parse_args()
-    in_terminal = args.action == "session"
+    in_terminal = args.action in ("session", "install-run")
     try:
         if args.action == "status":
             result = snapshot()
@@ -499,6 +554,11 @@ def main() -> int:
         elif args.action == "docs":
             open_url(get_agent(args.id)["docs"])
             result = {"message": tr("已打开安装与使用说明", "Installation and usage guide opened")}
+        elif args.action == "install":
+            result = {"message": install(args.id, args.project)}
+        elif args.action == "install-run":
+            install_run(args.id, args.project)
+            result = {"message": tr("安装流程已结束。", "Installation completed.")}
         elif args.action == "project":
             data = load_config()
             data["project"] = str(project_dir(args.directory))

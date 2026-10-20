@@ -18,5 +18,5 @@ This repository maintains Arch packaging recipes and Omarchy Quickshell plugins.
 - Keep each public plugin self-contained in plugins/<name>, with its own manifest, stable ID, README and license/notice. Read plugins/README.md before editing.
 - plugins/catalog.json contains only public maintained sources and an explicit files allowlist for standalone export. Never copy private repositories, internal URLs, credentials or runtime state into this public tree.
 - Preserve imported Apache-2.0 notices and provenance; the root 0BSD license does not relicense imported plugins.
-- Plugins launch native applications and link to reviewed package guidance; do not embed another package converter or run vendor installers.
+- Plugins launch native applications and link to reviewed package guidance; do not embed another package converter or run vendor installers. Plugins may delegate installation to this checkout's `omarchy-tools`, which builds pinned local recipes with makepkg: discover it by command name (never a baked-in repository path), run it in a user-owned terminal so the exact command and any elevation prompt stay visible, and fall back to the installation guide when the tool is absent.
 - Run tools/check-plugin and each plugin test suite in addition to the root checks. Static tests and offscreen QtQuick rendering are not Omarchy runtime acceptance.

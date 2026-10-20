@@ -1,4 +1,5 @@
 # Modified 2026-10-19: bilingual layout, language action and form-state regression checks.
+# Modified 2026-10-20: assert the install card action when a catalog entry is installable.
 # Apache-2.0; see ../LICENSE, ../NOTICE and ../ORIGIN.md.
 """Optional real QtQuick layout test. Requires PySide6, not needed by the plugin."""
 
@@ -137,6 +138,13 @@ def capture():
         root.setProperty("aw", report)
         click("agentAction-qoder")
         assert actions[-1] == ["docs", "qoder", "--project", "/home/user/Projects/example"], actions
+        for item in installed:
+            item["installable"] = item["id"] == "qoder"
+        root.setProperty("agents", installed)
+        QTest.qWait(100)
+        assert find("agentAction-qoder").property("text") == "Install", find("agentAction-qoder").property("text")
+        click("agentAction-qoder")
+        assert actions[-1] == ["install", "qoder", "--project", "/home/user/Projects/example"], actions
         flickable().setProperty("contentY", 0)
         QTest.qWait(100)
         save()

@@ -2,6 +2,7 @@
 """Install this local plugin without changing system packages or overwriting user data."""
 
 # Modified 2026-10-19: deploy bilingual resources and localized desktop menu metadata.
+# Modified 2026-10-20: link the repository omarchy-tools so install entries are discoverable.
 # Apache-2.0 source and revision: ORIGIN.md.
 
 import argparse
@@ -71,6 +72,25 @@ def main() -> None:
     launcher = Path.home() / ".local/bin/anolisa-agent-entry"
     desktop = Path.home() / ".local/share/applications/anolisa-agent-entry.desktop"
     autostart = shell_config / "hooks/post-boot.d/anolisa-agent-entry.sh"
+    # Install entries need omarchy-tools on PATH. Derive it from this checkout instead of
+    # baking a repository path into the plugin, and never take over someone else's file.
+    tools_source = SOURCE.parent.parent / "omarchy-tools"
+    tools_link = Path.home() / ".local/bin/omarchy-tools"
+
+    def link_tools() -> None:
+        if not tools_source.is_file():
+            print("未找到 " + str(tools_source) + "；安装入口将不会显示。")
+            return
+        if tools_link.is_symlink():
+            if tools_link.resolve() != tools_source.resolve():
+                print("保留已有的 " + str(tools_link) + "；安装入口沿用该目标。")
+            return
+        if tools_link.exists():
+            print("保留已有的 " + str(tools_link) + "；安装入口沿用该目标。")
+            return
+        tools_link.parent.mkdir(parents=True, exist_ok=True)
+        tools_link.symlink_to(tools_source)
+        print("已链接 " + str(tools_link) + " → " + str(tools_source))
     if args.replace and not args.uninstall and SOURCE.resolve() == target.resolve():
         p.error("请从新的源码或导出目录运行 --replace；不能就地替换已部署的插件目录。")
     if args.uninstall:
@@ -83,6 +103,8 @@ def main() -> None:
                 # These are exact, plugin-owned paths; never remove Agent software.
                 shutil.move(str(path), str(backup / (path.parent.name + "-" + path.name)))
         run(["omarchy-shell", "shell", "rescanPlugins"])
+        if tools_link.is_symlink() and tools_link.resolve() == tools_source.resolve():
+            shutil.move(str(tools_link), str(backup / (tools_link.parent.name + "-" + tools_link.name)))
         print("插件文件已移至可恢复备份：", backup)
         print("Agent 安装、账号与 ~/.config/anolisa/agent-entry.json 均保留。")
         return
@@ -134,6 +156,7 @@ def main() -> None:
     else:
         raise RuntimeError("插件已复制，但启用失败。请查看 omarchy-shell 日志，不要重复覆盖配置。")
     run(["omarchy-shell", "shell", "summon", ID, "{}"])
+    link_tools()
     print("已安装。顶栏点击 Agent 入口；也可运行 ~/.local/bin/anolisa-agent-entry open")
     if args.autostart:
         print("已写入 Omarchy post-boot.d 独立启动钩子；不修改 Hyprland 或现有钩子文件。")
