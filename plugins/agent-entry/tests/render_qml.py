@@ -103,6 +103,16 @@ def capture():
         assert find("statusText").property("text").startswith("Choose an agent")
         click("openTerminal")
         assert actions[-1] == ["launch", "terminal", "--project", "/home/user/Projects/example"], actions
+        click("agentAction-aw")
+        assert actions[-1] == ["docs", "aw", "--project", "/home/user/Projects/example"], actions
+        installed = entry.catalog()
+        for item in installed:
+            item["available"] = item["id"] == "aw"
+            item["status"] = "Launcher found" if item["available"] else "Launcher not found"
+        root.setProperty("agents", installed)
+        QTest.qWait(100)
+        click("agentAction-aw")
+        assert actions[-1] == ["launch", "aw", "--project", "/home/user/Projects/example"], actions
         click("agentAction-qoder")
         assert actions[-1] == ["docs", "qoder", "--project", "/home/user/Projects/example"], actions
         save()

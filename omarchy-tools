@@ -83,7 +83,7 @@ def select_software(names):
     return selected
 
 
-def install_software(names, remove=False):
+def install_software(names, remove=False, build_dependencies=("base-devel",)):
     require_target()
     selected = select_software(names)
     if remove:
@@ -109,7 +109,7 @@ def install_software(names, remove=False):
                 raise ValueError("{} 当前不在已配置软件源中；请查看 {}。".format(
                     item["package"], item["documentation"])) from None
     if local:
-        run(["sudo", "pacman", "-S", "--needed", "base-devel"])
+        run(["sudo", "pacman", "-S", "--needed", *build_dependencies])
     for item in selected:
         print("\n安装 {}；说明：{}".format(item["name"], ROOT / item["documentation"]), flush=True)
         if item.get("recipe"):
@@ -117,6 +117,19 @@ def install_software(names, remove=False):
         else:
             run(["omarchy", "pkg", "add", item["package"]])
     print("\n安装完成。首次登录与启动方法见上面的软件说明。")
+
+
+def setup_aw():
+    """Install the packaged demo and continue into native first-run setup."""
+    require_target()
+    require_commands("omarchy", "omarchy-shell", "sudo", "makepkg")
+    if not os.environ.get("WAYLAND_DISPLAY"):
+        raise ValueError("请在 Omarchy 图形会话的终端运行 ./omarchy-tools aw。")
+    install_software(["qodercli", "aw"], build_dependencies=("binutils", "fakeroot"))
+    install_panel(argparse.Namespace(autostart=False, replace=True, uninstall=False))
+    run(["omarchy-shell", "shell", "hide", "anolisa.agent-entry"])
+    # The setup runs in this terminal so sudo and native login stay interactive.
+    run(["/usr/bin/aw-launch"])
 
 
 def install_panel(args):
@@ -144,6 +157,7 @@ def list_software():
 def parser():
     p = argparse.ArgumentParser(description=__doc__, epilog="使用普通用户运行。完整用法与候选验证状态见 README.md 的 Quickstart。")
     commands = p.add_subparsers(dest="action", required=True)
+    commands.add_parser("aw", help="一键安装 Qoder、AW 与面板，并进入首次配置/登录")
     commands.add_parser("list", help="查看可安装软件、架构和来源")
     panel = commands.add_parser("panel", help="安装 Agent Entry 面板；需在 Omarchy 图形会话中运行")
     panel.add_argument("--autostart", action="store_true", help="登录桌面后显示面板")
@@ -162,7 +176,9 @@ def main(argv=None):
     if args.action == "panel" and args.uninstall and args.autostart:
         p.error("--uninstall 不能与 --autostart 同用。")
     try:
-        if args.action == "list":
+        if args.action == "aw":
+            setup_aw()
+        elif args.action == "list":
             list_software()
         elif args.action == "panel":
             install_panel(args)

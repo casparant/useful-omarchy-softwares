@@ -33,3 +33,5 @@
 已修改的 Python/QML 文件和说明带有迁移修改标记；`manifest.json` 的版本由 0.1.0 改为 0.2.0，description 改为包说明入口。其余未修改的 QML 文件保持上游原样。
 
 已进行源码、隔离测试、官方 manifest 校验与通用 QtQuick 离屏渲染/交互测试。未声明 Linux、Quickshell 宿主、Wayland、登录流程或任一架构实机测试通过。
+
+AW 集成增加独立的预编译包启动入口；成功请求启动后收起面板，让原生终端获得焦点。保留原生 Qoder 入口、配置和 Apache-2.0 许可。

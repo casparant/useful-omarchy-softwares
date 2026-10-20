@@ -1,0 +1,5 @@
+{
+  "stateDir": "/var/lib/aw-preview-sec-core/skillsec",
+  "enableDefaultSkillDirs": false,
+  "managedSkillDirs": []
+}

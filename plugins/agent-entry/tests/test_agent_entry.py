@@ -25,6 +25,16 @@ class EntryTest(unittest.TestCase):
         self.patcher.start()
         self.addCleanup(self.patcher.stop)
 
+    def test_aw_entry_uses_packaged_launcher_without_replacing_qoder(self) -> None:
+        lookup = lambda name: name if name == "/usr/bin/aw-launch" else ("/usr/bin/qodercli" if name == "qodercli" else None)
+        with patch.object(entry, "which", side_effect=lookup):
+            self.assertEqual(entry.command_for(entry.get_agent("aw")), ["/usr/bin/aw-launch"])
+            self.assertEqual(entry.command_for(entry.get_agent("qoder-cli")), ["/usr/bin/qodercli"])
+        with patch.object(entry, "command_for", return_value=["/usr/bin/aw-launch"]), patch.object(entry.subprocess, "run") as run:
+            entry.session("aw", self.temp.name)
+            self.assertEqual(run.call_args.args[0], ["/usr/bin/aw-launch"])
+            self.assertTrue(run.call_args.kwargs["check"])
+
     def test_status_does_not_spawn_or_read_credentials(self) -> None:
         with patch.object(entry, "which", return_value=None), patch.object(
             entry.subprocess, "Popen"
@@ -125,6 +135,7 @@ class EntryTest(unittest.TestCase):
 
     def test_package_guidance_is_specific_and_only_opens_browser(self) -> None:
         expected = {
+            "aw": "aw-preview",
             "qoder": "qoder-bin",
             "qoder-ide": "qoder-ide-bin",
             "qoder-cli": "qodercli-bin",

@@ -54,6 +54,43 @@ class DispatchTests(unittest.TestCase):
     def commands(self):
         return [call.args[0] for call in self.process.call_args_list]
 
+    def test_aw_one_command_installs_then_deploys_panel_then_launches(self):
+        for arch in ("x86_64", "aarch64"):
+            with self.subTest(arch=arch), mock.patch.object(cli.platform, "machine", return_value=arch), mock.patch.dict(cli.os.environ, {"WAYLAND_DISPLAY": "wayland-1"}):
+                self.process.reset_mock()
+                self.assertEqual(self.invoke("aw"), 0)
+                self.assertEqual(self.commands()[0], ["sudo", "pacman", "-S", "--needed", "binutils", "fakeroot"])
+                builds = [call.kwargs["cwd"].name for call in self.process.call_args_list if call.args[0][0] == "makepkg"]
+                self.assertEqual(builds, ["qodercli-bin", "aw-preview"])
+                self.assertEqual(self.commands()[-3:], [
+                    [sys.executable, str(ROOT / "plugins/agent-entry/install.py"), "--replace"],
+                    ["omarchy-shell", "shell", "hide", "anolisa.agent-entry"],
+                    ["/usr/bin/aw-launch"],
+                ])
+                self.assertFalse(any("--noconfirm" in command for command in self.commands()))
+
+    def test_aw_failed_package_never_deploys_or_launches(self):
+        self.process.side_effect = [None, subprocess.CalledProcessError(8, ["makepkg"])]
+        with mock.patch.dict(cli.os.environ, {"WAYLAND_DISPLAY": "wayland-1"}):
+            self.assertEqual(self.invoke("aw"), 8)
+        self.assertEqual(len(self.commands()), 2)
+
+    def test_aw_panel_failure_does_not_start_agent(self):
+        self.process.side_effect = [None, None, None, None, subprocess.CalledProcessError(1, ["panel"])]
+        with mock.patch.dict(cli.os.environ, {"WAYLAND_DISPLAY": "wayland-1"}):
+            self.assertEqual(self.invoke("aw"), 1)
+        self.assertFalse(any(command[0] == "/usr/bin/aw-launch" for command in self.commands()))
+
+    def test_aw_requires_desktop_before_installation(self):
+        with mock.patch.dict(cli.os.environ, {}, clear=True):
+            self.assertEqual(self.invoke("aw"), 1)
+        self.process.assert_not_called()
+
+    def test_aw_install_alias_uses_binary_recipe(self):
+        self.assertEqual(self.invoke("install", "aw", "aw-preview"), 0)
+        self.assertEqual(len(self.commands()), 2)
+        self.assertEqual(self.process.call_args.kwargs["cwd"].name, "aw-preview")
+
     def test_local_build_uses_native_user_and_recipe_directory_on_both_architectures(self):
         for arch in ("x86_64", "aarch64"):
             with self.subTest(arch=arch), mock.patch.object(cli.platform, "machine", return_value=arch):
@@ -165,7 +202,7 @@ class DispatchTests(unittest.TestCase):
     def test_catalog_cannot_supply_an_escaping_recipe_or_option_as_package(self):
         entries = copy.deepcopy(cli.software_entries())
         for field, value in (("recipe", "../qoderwake-bin"), ("install", {"method": "omarchy", "package": "--overwrite"})):
-            item = entries[0] if field == "recipe" else entries[-1]
+            item = entries[0] if field == "recipe" else next(item for item in entries if item["id"] == "dingtalk")
             original = item[field]
             item[field] = value
             with self.subTest(field=field), mock.patch.object(cli, "software_entries", return_value=entries):
