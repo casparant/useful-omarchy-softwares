@@ -5,11 +5,11 @@
 
 var strings = {
     en: {
-        aw_heading: "AW workbench",
-        aw_launch: "Start Qoder through AW",
+        aw_heading: "AW component status",
+
         aw_state_loading: "Reading status…",
         aw_state_not_installed: "AW is not installed",
-        aw_state_unconfigured: "Setup required · Start to configure",
+        aw_state_unconfigured: "Setup required · See the installation guide",
         aw_state_online: "AW is online",
         aw_state_offline: "AW is stopped · Stored metrics remain available",
         aw_state_unavailable: "Runtime status unavailable",
@@ -41,7 +41,7 @@ var strings = {
         aw_metrics_scope: "Up to 200 recent component-store candidates; not session usage or billing. Native adoption remains unverified.",
         aw_recent: "Recent activity · Current AW instance · Newest first",
         aw_updated: "Queried at",
-        aw_no_activity: "No execution records yet. Start Qoder through AW and use a tool.",
+        aw_no_activity: "No execution records in this AW service generation.",
         aw_activity_unavailable: "Recent activity unavailable",
         aw_event_step_completed: "Step completed",
         aw_event_error_block: "Check failed; blocked by failure policy",
@@ -81,7 +81,7 @@ var strings = {
         install: "Install",
         install_guide: "Installation guide",
         guide: "Guide",
-        footer: "v0.5 · Install runs in a terminal through omarchy-tools; guides open in your browser. Software stays under pacman / makepkg. A detected launcher does not confirm sign-in.",
+        footer: "v0.6 PoC · Install runs in a terminal through omarchy-tools; guides open in your browser. Software stays under pacman / makepkg. A detected launcher does not confirm sign-in.",
         edit_config: "Edit config",
         register_title: "Add an agent entry",
         entry_id: "Unique ID, e.g. my-cosh (lowercase, numbers, hyphens)",
@@ -95,11 +95,11 @@ var strings = {
         save_entry: "Save entry"
     },
     zh: {
-        aw_heading: "AW 工作台",
-        aw_launch: "通过 AW 启动 Qoder",
+        aw_heading: "AW 组件状态",
+
         aw_state_loading: "正在读取状态…",
         aw_state_not_installed: "AW 尚未安装",
-        aw_state_unconfigured: "首次使用待配置 · 点击启动继续",
+        aw_state_unconfigured: "首次使用待配置 · 请查看安装说明",
         aw_state_online: "AW 在线",
         aw_state_offline: "AW 未启动 · 历史统计仍可查看",
         aw_state_unavailable: "运行状态暂不可用",
@@ -131,7 +131,7 @@ var strings = {
         aw_metrics_scope: "最近最多 200 条组件存储候选；非当前会话或账单用量。原生采用尚未验证（unverified）。",
         aw_recent: "最近活动 · 当前 AW 实例 · 最新在前",
         aw_updated: "查询于",
-        aw_no_activity: "暂无执行记录；通过 AW 启动 Qoder 后使用工具。",
+        aw_no_activity: "本次 AW 服务运行期间暂无执行记录。",
         aw_activity_unavailable: "最近活动暂不可用",
         aw_event_step_completed: "步骤完成",
         aw_event_error_block: "检查异常，按策略阻断",
@@ -171,7 +171,7 @@ var strings = {
         install: "安装",
         install_guide: "安装说明",
         guide: "说明",
-        footer: "v0.5 · 安装会在终端中调用仓库的 omarchy-tools 构建；说明文档在浏览器中打开。软件仍由 pacman / makepkg 管理。检测到命令不代表已经登录。",
+        footer: "v0.6 PoC · 安装会在终端中调用仓库的 omarchy-tools 构建；说明文档在浏览器中打开。软件仍由 pacman / makepkg 管理。检测到命令不代表已经登录。",
         edit_config: "编辑配置",
         register_title: "添加 Agent 入口",
         entry_id: "唯一 ID，如 my-cosh（小写字母、数字、短横线）",

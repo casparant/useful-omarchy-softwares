@@ -69,7 +69,40 @@ def empty(state):
     return {'state': state, 'audit': None, 'updated': time.strftime('%H:%M:%S'),
             'tokenless': {'configured': None, 'enabled': None, 'status': 'unavailable'},
             'security': {'configured': None, 'enabled': None, 'backend': 'not_checked'},
-            'activity_status': 'unavailable', 'activities': []}
+            'activity_status': 'unavailable', 'activities': [],
+            'hook_plan': {'status': 'unavailable', 'phases': []}}
+
+
+def hook_plan(document, security_id, tokenless_id):
+    """Describe configured order, never infer runtime attachment or adoption."""
+    events = document['spec']['events']
+    phases = []
+    for event in ('tool.before', 'tool.after'):
+        value = events.get(event)
+        if value is None:
+            phases.append({'event': event, 'enabled': False, 'steps': []})
+            continue
+        enabled = value['enabled']
+        steps = value['steps']
+        if type(enabled) is not bool or not isinstance(steps, list) or len(steps) > 128:
+            raise ValueError('hook_plan_contract')
+        projected = []
+        for step in steps:
+            role = 'custom'
+            if security_id is not None and step.get('provider') == security_id:
+                role = {'scan_code': 'security', 'observe_tool': 'observation'}.get(step.get('operation'), role)
+            elif tokenless_id is not None and step.get('provider') == tokenless_id:
+                role = {'pre_tool': 'optimization', 'post_tool': 'compression'}.get(step.get('operation'), role)
+            action = step['on_error']
+            step_enabled = step.get('enabled', True)
+            if action not in ('block', 'report', 'withhold_result') or type(step_enabled) is not bool:
+                raise ValueError('hook_error_action')
+            # No argv, guards, user-defined names, config values or input payloads.
+            projected.append({'role': role, 'on_error': action,
+                              'enabled': step_enabled})
+        phases.append({'event': event, 'enabled': enabled, 'steps': projected,
+                       'conditional': 'guard' in value or 'match' in value})
+    return {'status': 'configured', 'phases': phases}
 
 
 def flags(provider):
@@ -210,6 +243,13 @@ def snapshot():
         security_id, socket = security_transport(document, prefix)
         data = query([executable, 'inspect', '--config', config, '--json'])
         result = project(data, security_id)
+        tokenless_id = next((p['id'] for p in data['providers']
+                             if p.get('implementation') == 'tokenless'), None)
+        try:
+            result['hook_plan'] = hook_plan(document, security_id, tokenless_id)
+        except (KeyError, TypeError, ValueError, AttributeError):
+            # A plan projection error must not erase independent health or metrics.
+            pass
         if socket is not None:
             try:
                 result['security']['backend'] = health(prefix, socket)

@@ -22,6 +22,8 @@ FILES = [
     "Dashboard.qml",
     "DashboardContent.qml",
     "AwWorkbench.qml",
+    "ControlContent.qml",
+    "HookPlan.qml",
     "EntryButton.qml",
     "EntryField.qml",
     "I18n.js",

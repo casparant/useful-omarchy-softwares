@@ -9,7 +9,6 @@ Rectangle {
     property var report: null
     property string language: "en"
     property bool busy: false
-    property bool launcherAvailable: false
     property bool detailsVisible: false
     readonly property var viewData: report || ({state: "loading"})
     readonly property var metrics: viewData.tokenless || ({})
@@ -21,7 +20,7 @@ Rectangle {
         return component.enabled === true ? t("aw_enabled") : component.enabled === false ? t("aw_disabled") : t("aw_unknown")
     }
     function number(value) { return Number(value).toLocaleString(Qt.locale(language), "f", 0) }
-    signal launchRequested()
+    signal guideRequested()
     implicitHeight: body.implicitHeight + 36
     radius: 14
     color: "#17263b"
@@ -45,11 +44,10 @@ Rectangle {
                 }
             }
             EntryButton {
-                objectName: "agentAction-aw"
-                text: root.launcherAvailable ? root.t("aw_launch") : root.t("install_guide")
-                accent: root.launcherAvailable
+                objectName: "awGuide"
+                text: root.t("guide")
                 enabled: !root.busy
-                onClicked: root.launchRequested()
+                onClicked: root.guideRequested()
             }
         }
         Text {

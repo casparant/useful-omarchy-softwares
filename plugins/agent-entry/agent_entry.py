@@ -96,7 +96,7 @@ def catalog() -> list[dict[str, Any]]:
             id="cosh",
             name="cosh-ng",
             kind="terminal",
-            candidates=["cosh-ng", "cosh"],
+            candidates=["cosh", "cosh-shell", "cosh-ng"],
             subtitle=tr("ANOLISA 交互终端", "Interactive terminal"),
             docs="https://github.com/casparant/ANOLISA",
         ),

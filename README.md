@@ -88,6 +88,9 @@ git pull --ff-only
 
 ## 桌面插件
 
+当前分支为 [Agent 管控面 PoC](docs/agent-control-plane-poc.md)：顶栏摘要 → 组件/Hook 详情，cosh 为交互入口；herdr 模式切换与 AW 热更新尚待接入。
+
+
 [plugins/](plugins/README.md)独立维护 Quickshell 插件。[Agent Entry](plugins/agent-entry/README.md)已从 ANOLISA 公开实验迁入，保留原 ID 和 Apache-2.0 许可，提供顶栏入口、应用/终端启动及安装说明。部署、检查和独立导出流程见插件目录；目标 Omarchy 会话仍待实机验收。
 
 ## 在 Arch Linux 上构建首包

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "anolisa.agent-entry",
   "name": "Agent Entry",
-  "version": "0.5.1",
-  "description": "AW read-only workbench, bilingual launcher and catalog install hand-off",
+  "version": "0.6.0",
+  "description": "Quiet AW control plane preview with configured hooks and cosh entry",
   "kinds": [
     "bar-widget",
     "panel"

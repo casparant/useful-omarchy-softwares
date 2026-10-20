@@ -45,6 +45,7 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/plugin-qt"
           "$RUNNER_TEMP/plugin-qt/bin/python" -m pip install --disable-pip-version-check --only-binary=:all: -r plugins/agent-entry/tests/requirements-qt.txt
           "$RUNNER_TEMP/plugin-qt/bin/python" plugins/agent-entry/tests/render_qml.py "$RUNNER_TEMP/agent-entry-preview.png"
+          "$RUNNER_TEMP/plugin-qt/bin/python" plugins/agent-entry/tests/render_control.py "$RUNNER_TEMP/control-plane-preview"
       - name: Test maintenance tools
         run: python3 -m unittest discover -s tests -v
       - name: Check whitespace

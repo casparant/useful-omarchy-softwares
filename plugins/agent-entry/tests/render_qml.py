@@ -109,7 +109,7 @@ def capture():
         assert find("statusText").property("text").startswith("Choose an agent")
         click("openTerminal")
         assert actions[-1] == ["launch", "terminal", "--project", "/home/user/Projects/example"], actions
-        click("agentAction-aw")
+        click("awGuide")
         assert actions[-1] == ["docs", "aw", "--project", "/home/user/Projects/example"], actions
         installed = entry.catalog()
         for item in installed:
@@ -117,8 +117,8 @@ def capture():
             item["status"] = "Launcher found" if item["available"] else "Launcher not found"
         root.setProperty("agents", installed)
         QTest.qWait(100)
-        click("agentAction-aw")
-        assert actions[-1] == ["launch", "aw", "--project", "/home/user/Projects/example"], actions
+        click("awGuide")
+        assert actions[-1] == ["docs", "aw", "--project", "/home/user/Projects/example"], actions
         fixture = json.loads((ROOT / "tests/fixtures/panel-ok.json").read_text())
         report = entry._aw.project(fixture)
         report['security'] = {'configured': True, 'enabled': True, 'backend': 'authenticated_reachable'}

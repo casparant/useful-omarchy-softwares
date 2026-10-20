@@ -1,5 +1,16 @@
 # Agent Entry · Omarchy 插件
 
+## 管控面 PoC（0.6）
+
+顶栏 Agent 现在打开右上角的只读管控摘要；「查看详情」进入完整状态页，
+「软件与安装」保留原应用目录。AW 区域不再点击启动 Qoder。
+cosh 作为应用入口，运行视图计划由 herdr 支撑；当前只发现并启动已有 cosh 命令，
+模式切换未实现。查看状态无需模型认证。
+Hook 区域显示文件配置顺序、关闭/条件步骤和异常动作，不推断当前会话已接入。
+热更新尚未接入；设计及试用边界见
+[PoC 说明](https://github.com/casparant/useful-omarchy-softwares/blob/main/docs/agent-control-plane-poc.md)。
+
+
 <!-- Modified 2026-10-19: bilingual UI, persisted language choice and English demonstration setup. -->
 
 通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.5.1**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
@@ -7,7 +18,7 @@
 源码来自公开 ANOLISA 实验，采用 **Apache-2.0**；详见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和固定版本的[来源与修改记录](ORIGIN.md)。本目录不适用仓库原创代码的 0BSD 许可。
 
 
-AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-core 的首次配置或日常 `aw run`。从仓库根目录执行 `./omarchy-tools aw` 可一次完成软件安装、面板部署与首次启动；后续点击 AW 工作台的「通过 AW 启动 Qoder」。Qoder CLI 卡片仍是原生直连入口。仅检测到入口不代表 Provider 已生效。
+现有 `/usr/bin/aw-launch` 继续提供 Tokenless/可选 sec-core 的首次配置或日常 `aw run`。从仓库根目录执行 `./omarchy-tools aw` 可一次完成软件安装、面板部署与首次启动；日常可从 cosh 终端执行 `aw-launch`。AW 状态区只提供查询与说明，Qoder CLI 卡片仍是原生直连入口。仅检测到入口不代表 Provider 已生效。
 
 ## AW 工作台与首次登录
 
@@ -25,7 +36,7 @@ AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-c
 
 工作台识别预编译包和 `$XDG_CONFIG_HOME/aw/preview.yaml`（默认 `~/.config/aw/preview.yaml`）。
 显式覆盖 AW 启动命令时仍能启动，但不推断其状态。Qoder CLI 卡片为直接启动入口；
-需要 AW Hook 时使用工作台按钮，首次配置、目录信任与工具权限继续由终端和 Qoder 原生界面确认。
+需要 AW Hook 时在 cosh 终端使用现有 `aw-launch`，首次配置、目录信任与工具权限继续由终端和 Qoder 原生界面确认。
 Tokenless 请求重试后的命令仍要经过安全检查与原生权限；不建议为演示全局放行 `env`。
 
 演示电脑无需访问内网仓库。安装需要公开 GitHub、Arch/Omarchy 软件源和 Qoder 公开下载服务；

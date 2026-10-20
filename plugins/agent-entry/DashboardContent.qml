@@ -78,8 +78,7 @@ Rectangle {
                 language: root.language
                 report: root.aw
                 busy: root.busy
-                launcherAvailable: root.agents.some(function(agent) { return agent.id === "aw" && agent.available })
-                onLaunchRequested: root.actionRequested([launcherAvailable ? "launch" : "docs", "aw", "--project", projectField.text])
+                onGuideRequested: root.actionRequested(["docs", "aw", "--project", projectField.text])
             }
 
             Rectangle {
