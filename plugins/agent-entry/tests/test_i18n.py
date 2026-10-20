@@ -64,7 +64,7 @@ class LanguageTest(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertEqual(result, {"message": "Language preference saved", "language": "en", "languagePreference": "en"})
             self.assertEqual(entry.load_config()["language"], "en")
-            self.assertEqual(entry.catalog()[0]["subtitle"], "Interactive terminal")
+            self.assertEqual(next(item for item in entry.catalog() if item["id"] == "cosh")["subtitle"], "Interactive terminal")
             code, result = self.invoke("language", "zh")
             self.assertEqual(code, 0)
             self.assertEqual(result["language"], "zh")

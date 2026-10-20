@@ -94,7 +94,7 @@ jobs:
             echo "### $PACKAGE / $ARCH"
             echo "Result: ${{ job.status }}"
             echo "Builder: omacom/omarchy-pkgs at 29c89f78d85e1c9330a1bc1614c04daecb219cc3"
-            echo "Scope: makepkg, SRCINFO, install, ELF dependencies, CLI version/help when applicable, remove."
+            echo "Scope: makepkg, SRCINFO, install, ELF dependencies, CLI version/help when applicable, AW receipts/configure/offline inspect/RTK/backend diagnostics when applicable, remove."
             echo "Pending manual checks: upgrade, authentication, Wake service/portal, GUI and Omarchy desktop behavior."
             echo "No proprietary binary artifacts are uploaded."
           } >> "$GITHUB_STEP_SUMMARY"

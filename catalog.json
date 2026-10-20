@@ -54,9 +54,9 @@
         "source_checksums": "passed-both-architectures",
         "elf_architecture": "passed-both-architectures",
         "package_staging": "passed-on-macos-with-compatibility-adapters",
-        "linux_build": "pending",
-        "lifecycle": "pending",
-        "omarchy_runtime": "pending"
+        "linux_build": "passed-aarch64-makepkg; x86_64-runtime-pending",
+        "lifecycle": "passed-aarch64-install-pkgrel-upgrade-config-preservation; removal-checked-during-validation",
+        "omarchy_runtime": "passed-aarch64-default-entry-aw-model-compression-security; browser-login-and-Chinese-input-pending"
       },
       "release_feed": {
         "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/channels/manifest.json",
@@ -171,6 +171,29 @@
         "method": "omarchy",
         "package": "dingtalk-bin"
       }
+    },
+    {
+      "id": "aw",
+      "name": "AW Preview + Tokenless/RTK + optional sec-core",
+      "homepage": "https://github.com/agentic-os-org/ANOLISA/tree/main/src/aw",
+      "architectures": [
+        "x86_64",
+        "aarch64"
+      ],
+      "recipe": "pkgbuilds/aw-preview",
+      "documentation": "pkgbuilds/aw-preview/README.md",
+      "status": "recipe-candidate",
+      "aur": null,
+      "omarchy": null,
+      "maintenance": "pinned prebuilt Preview; same-source binaries for x86_64 and aarch64",
+      "source_commit": "696e1aa0c02e9c6a6817bc68c2101f7034d52c59",
+      "verification": {
+        "source_checksums": "pinned-x86_64-upstream-CI-and-aarch64-native-build; same-696e1aa0-source",
+        "linux_build": "x86_64-upstream-Integration-passed; Ubuntu-24.04-aarch64-build-passed",
+        "arch_package": "Omarchy-aarch64-real-release-download-makepkg-install-and-receipts-passed",
+        "omarchy_runtime": "one-command-install-Panel-launch-and-default-Qoder-real-model-passed; x86_64-laptop-pending"
+      },
+      "binary_redistribution": "Apache-2.0; original receipts, LICENSE/NOTICE and RTK provenance retained"
     }
   ]
 }
