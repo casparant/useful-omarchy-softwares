@@ -26,7 +26,7 @@
         "path": "experiments/omarchy-agent-entry"
       },
       "verification": {
-        "python_tests": "passed-37-on-macos-python3.9.6-2026-10-19",
+        "python_tests": "passed-41-on-omarchy-linux-python3.14.8-2026-10-20",
         "manifest": "passed-official-validator-cce8b1c971df64a7610b818ff8819e4bea04584a",
         "qml_render": "passed-en-zh-qtquick-offscreen-pyside6.7.3-2026-10-19; not-quickshell-runtime",
         "linux_installation": "pending",

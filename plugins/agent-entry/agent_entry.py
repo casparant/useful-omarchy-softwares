@@ -2,6 +2,7 @@
 """Local Agent launcher and package guidance. No software installer."""
 
 # Modified 2026-10-19: persistent Chinese/English preferences and localized launcher output.
+# Modified 2026-10-20: focus an already-running GUI window instead of re-spawning into its own lock.
 # Original Apache-2.0 source and revision are recorded in ORIGIN.md.
 
 from __future__ import annotations
@@ -237,8 +238,7 @@ def command_for(item: dict[str, Any]) -> list[str] | None:
         "qoder-ide": ("qoder-ide", "qoderide"),
     }
     if item["id"] in desktop_ids and which("gtk-launch"):
-        roots = [Path.home() / ".local/share/applications", Path("/usr/share/applications")]
-        for directory in roots:
+        for directory in desktop_dirs():
             for file in sorted(directory.glob("*.desktop")):
                 if file.stem.lower() in desktop_ids[item["id"]]:
                     return [which("gtk-launch"), file.stem]
@@ -329,6 +329,48 @@ def open_url(url: str) -> None:
     detach([opener, url])
 
 
+def desktop_dirs() -> list[Path]:
+    """Desktop file roots, user first. A function so tests can stay off the real system dir."""
+    return [Path.home() / ".local/share/applications", Path("/usr/share/applications")]
+
+
+def desktop_window_class(argv: list[str]) -> str | None:
+    """Anchored window-class pattern read from the desktop file this argv opens."""
+    if len(argv) < 2 or Path(argv[0]).name != "gtk-launch":
+        return None
+    stem = argv[1]
+    for directory in desktop_dirs():
+        path = directory / (stem + ".desktop")
+        if not path.is_file():
+            continue
+        value = stem
+        try:
+            with path.open(encoding="utf-8", errors="replace") as handle:
+                for line in handle:
+                    if line.startswith("StartupWMClass="):
+                        value = line.split("=", 1)[1].strip() or stem
+                        break
+        except OSError:
+            return None
+        # Unanchored, "qoder" would also match a "qoder-ide" window.
+        return "^" + re.escape(value) + "$"
+    return None
+
+
+def focus_running(pattern: str) -> bool:
+    """Bring a running window forward; False when the app or helper is absent."""
+    runner = which("omarchy")
+    if not runner:
+        return False
+    try:
+        result = subprocess.run(
+            [runner, "hyprland", "focus", "app", pattern], capture_output=True, timeout=5
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return result.returncode == 0
+
+
 def launch(agent_id: str, directory: str | None = None) -> str:
     cwd = project_dir(directory)
     if agent_id == "terminal":
@@ -347,6 +389,10 @@ def launch(agent_id: str, directory: str | None = None) -> str:
     if item["kind"] in ("terminal", "wake"):
         open_terminal(helper_payload("session", agent_id, "--project", str(cwd)), cwd)
     else:
+        # A re-spawn hits the app's single-instance lock and exits without moving any window.
+        pattern = desktop_window_class(argv)
+        if pattern and focus_running(pattern):
+            return item["name"] + tr(" 已在运行，窗口已切到前台。", " is already running; its window was brought forward.")
         detach(argv, cwd)
     return tr("已发起启动请求；登录与实际运行请在原生界面确认。", "Launch requested. Complete sign-in and check the session in the app.")
 

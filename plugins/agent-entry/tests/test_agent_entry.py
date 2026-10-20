@@ -1,4 +1,5 @@
 # Modified 2026-10-17: test package guidance and independent Desktop/IDE/CLI detection.
+# Modified 2026-10-20: cover raising a running GUI window; isolate desktop lookup from the host.
 # Apache-2.0; see ../LICENSE, ../NOTICE and ../ORIGIN.md.
 import importlib.util
 import json
@@ -115,13 +116,87 @@ class EntryTest(unittest.TestCase):
         applications.mkdir(parents=True)
         (applications / "qoder-ide.desktop").write_text("[Desktop Entry]\n")
         lookup = lambda s: "/usr/bin/gtk-launch" if s == "gtk-launch" else None
-        with patch.object(entry.Path, "home", return_value=home), patch.object(entry, "which", side_effect=lookup):
+        # desktop_dirs keeps the real /usr/share/applications out of the result: a
+        # host with Qoder installed otherwise answers for the empty temp directory.
+        with patch.object(entry.Path, "home", return_value=home), patch.object(
+            entry, "desktop_dirs", return_value=[applications]
+        ), patch.object(entry, "which", side_effect=lookup):
             self.assertIsNone(entry.command_for(entry.get_agent("qoder")))
             self.assertEqual(entry.command_for(entry.get_agent("qoder-ide")), ["/usr/bin/gtk-launch", "qoder-ide"])
             (applications / "qoder-ide.desktop").unlink()
             (applications / "qoder.desktop").write_text("[Desktop Entry]\n")
             self.assertEqual(entry.command_for(entry.get_agent("qoder")), ["/usr/bin/gtk-launch", "qoder"])
             self.assertIsNone(entry.command_for(entry.get_agent("qoder-ide")))
+
+    def gui_environment(self, desktop_text: str):
+        home = Path(self.temp.name)
+        applications = home / ".local/share/applications"
+        applications.mkdir(parents=True, exist_ok=True)
+        (applications / "qoder.desktop").write_text(desktop_text, encoding="utf-8")
+        lookup = lambda s: {
+            "gtk-launch": "/usr/bin/gtk-launch",
+            "omarchy": "/usr/bin/omarchy",
+        }.get(s)
+        return home, applications, lookup
+
+    def test_class_pattern_is_anchored_and_read_from_the_desktop_file(self) -> None:
+        home, applications, lookup = self.gui_environment("[Desktop Entry]\nStartupWMClass=qoder\n")
+        argv = ["/usr/bin/gtk-launch", "qoder"]
+        with patch.object(entry.Path, "home", return_value=home), patch.object(
+            entry, "desktop_dirs", return_value=[applications]
+        ), patch.object(entry, "which", side_effect=lookup):
+            # Anchored so "qoder" cannot match a "qoder-ide" window.
+            self.assertEqual(entry.desktop_window_class(argv), "^qoder$")
+        home, applications, lookup = self.gui_environment("[Desktop Entry]\n")
+        with patch.object(entry.Path, "home", return_value=home), patch.object(
+            entry, "desktop_dirs", return_value=[applications]
+        ):
+            self.assertEqual(entry.desktop_window_class(argv), "^qoder$")
+        self.assertIsNone(entry.desktop_window_class(["/usr/bin/cosh-ng"]))
+        self.assertIsNone(
+            entry.desktop_window_class(["/usr/bin/gtk-launch", "absent-entry"])
+        )
+
+    def test_running_gui_window_is_raised_instead_of_respawned(self) -> None:
+        home, applications, lookup = self.gui_environment("[Desktop Entry]\nStartupWMClass=qoder\n")
+        ok = type("Result", (), {"returncode": 0})()
+        with patch.object(entry.Path, "home", return_value=home), patch.object(
+            entry, "desktop_dirs", return_value=[applications]
+        ), patch.object(entry, "which", side_effect=lookup), patch.object(
+            entry.subprocess, "run", return_value=ok
+        ) as focus, patch.object(entry.subprocess, "Popen") as spawn:
+            message = entry.launch("qoder")
+        self.assertEqual(
+            focus.call_args.args[0], ["/usr/bin/omarchy", "hyprland", "focus", "app", "^qoder$"]
+        )
+        spawn.assert_not_called()
+        self.assertIn("已在运行", message)
+
+    def test_gui_still_launches_when_no_window_is_found(self) -> None:
+        home, applications, lookup = self.gui_environment("[Desktop Entry]\nStartupWMClass=qoder\n")
+        absent = type("Result", (), {"returncode": 1})()
+        with patch.object(entry.Path, "home", return_value=home), patch.object(
+            entry, "desktop_dirs", return_value=[applications]
+        ), patch.object(entry, "which", side_effect=lookup), patch.object(
+            entry.subprocess, "run", return_value=absent
+        ), patch.object(entry.subprocess, "Popen") as spawn:
+            message = entry.launch("qoder")
+        self.assertEqual(spawn.call_args.args[0], ["/usr/bin/gtk-launch", "qoder"])
+        self.assertTrue(spawn.call_args.kwargs["stdout"], "the app must not hold the helper's pipes")
+        self.assertIn("已发起启动请求", message)
+
+    def test_focus_is_skipped_without_the_compositor_helper(self) -> None:
+        home, applications, _ = self.gui_environment("[Desktop Entry]\nStartupWMClass=qoder\n")
+        lookup = lambda s: "/usr/bin/gtk-launch" if s == "gtk-launch" else None
+        with patch.object(entry.Path, "home", return_value=home), patch.object(
+            entry, "desktop_dirs", return_value=[applications]
+        ), patch.object(entry, "which", side_effect=lookup), patch.object(
+            entry.subprocess, "run"
+        ) as focus, patch.object(entry.subprocess, "Popen") as spawn:
+            message = entry.launch("qoder")
+        focus.assert_not_called()
+        spawn.assert_called()
+        self.assertIn("已发起启动请求", message)
 
     def test_package_guidance_is_specific_and_only_opens_browser(self) -> None:
         expected = {
