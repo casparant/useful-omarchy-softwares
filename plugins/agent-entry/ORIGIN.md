@@ -11,6 +11,13 @@
 
 上游根 NOTICE 还列有其他 ANOLISA 组件及其依赖，这些代码未被迁入。本目录只保留与本次移入源码相关的项目声明；没有打包任何第三方应用二进制。
 
+## 2026-10-20 · 0.5.0
+
+- 将 AW 启动卡片扩展为只读工作台，分开展示服务、历史压缩统计、策略与后台健康及最近步骤。
+- 复用公开 `aw-panel/v1alpha1` 与 `aw-sec-core-health/v1alpha1`，保留 `unknown` / `unverified` 的证据边界；不改变 AW、安全策略或 Qoder 原生授权。
+- 新增有时限与输出上限的查询、错误状态及双语界面回归；更新部署白名单。
+- 回归 fixture 来自公开 [ANOLISA 提交 696e1aa0](https://github.com/agentic-os-org/ANOLISA/tree/696e1aa0c02e9c6a6817bc68c2101f7034d52c59/src/aw/crates/aw-provider/examples/views)，保留上游 Apache-2.0 署名。测试数据不随插件部署。
+
 ## 2026-10-20 · 0.4.1
 
 - 承接 0.4.0（AW 预编译包启动入口）；本轮只改 GUI 聚焦与测试隔离。

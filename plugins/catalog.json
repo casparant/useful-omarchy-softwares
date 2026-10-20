@@ -26,12 +26,12 @@
         "path": "experiments/omarchy-agent-entry"
       },
       "verification": {
-        "python_tests": "passed-42-on-omarchy-linux-python3.14.8-2026-10-20",
+        "python_tests": "passed-59-on-linux-arm64-python3.12-and-omarchy-python3.14-2026-10-20",
         "manifest": "passed-official-validator-cce8b1c971df64a7610b818ff8819e4bea04584a",
-        "qml_render": "passed-en-zh-qtquick-offscreen-pyside6.7.3-2026-10-19; not-quickshell-runtime",
-        "linux_installation": "pending",
-        "omarchy_runtime": "pending",
-        "standalone_export": "passed-15-allowlisted-files-and-official-manifest-validation-2026-10-19"
+        "qml_render": "passed-en-zh-wide-narrow-and-workbench-actions-qtquick-pyside6.7.3-2026-10-20",
+        "linux_installation": "passed-aarch64-omarchy-install-and-replace-2026-10-20",
+        "omarchy_runtime": "passed-aarch64-read-only-workbench-health-hook-fixture-and-native-PAT-input; account-authentication-and-x86_64-desktop-pending",
+        "standalone_export": "17-allowlisted-files; validated-by-plugin-and-export-regression-tests"
       },
       "distribution": {
         "canonical_source": "monorepo-subdirectory",
@@ -43,10 +43,12 @@
         "BarWidget.qml",
         "Dashboard.qml",
         "DashboardContent.qml",
+        "AwWorkbench.qml",
         "EntryButton.qml",
         "EntryField.qml",
         "I18n.js",
         "agent_entry.py",
+        "aw_status.py",
         "i18n.py",
         "install.py",
         "LICENSE",

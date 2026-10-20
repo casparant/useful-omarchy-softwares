@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "anolisa.agent-entry",
   "name": "Agent Entry",
-  "version": "0.4.1",
-  "description": "Bilingual agent launcher, package guidance and local registration",
+  "version": "0.5.0",
+  "description": "AW read-only workbench and bilingual native agent launcher",
   "kinds": [
     "bar-widget",
     "panel"

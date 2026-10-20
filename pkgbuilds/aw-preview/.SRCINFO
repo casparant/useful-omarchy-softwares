@@ -1,7 +1,7 @@
 pkgbase = aw-preview
 	pkgdesc = AW agent launcher with Tokenless/RTK and optional sec-core integration (Preview)
 	pkgver = 0.1.0.preview20261020
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/agentic-os-org/ANOLISA/tree/main/src/aw
 	arch = x86_64
 	arch = aarch64
@@ -24,7 +24,7 @@ pkgbase = aw-preview
 	source = LICENSE.launcher
 	sha256sums = 4a8efcea38a26bf8c2976ac1d6a7d0f8b47f58030cf8747abc7130b53c0ed51f
 	sha256sums = 9746897ca19b53504d77de14d8c8de12482c2fb636fbad52b31c90e96cb6061f
-	sha256sums = 1bec4bd9f3696dd09b241405b541567285644fba0e6a38983c7343e663112138
+	sha256sums = d5c8821602acf9daf4a2493403d82e734341f291d6a2c26ed92ed701956cafc1
 	sha256sums = f32a6c915c02cc3e582b726cac1b40b318c732b3039d2c7735fc42638c2521a4
 	sha256sums = 24e67b47c9220aee2ac48e6dafe218f7fd2f5bd2f7f1ec7784fb66f31472ea63
 	source_x86_64 = https://github.com/kongche-jbw/anolisa/releases/download/aw-demo-20261020-696e1aa0/aw-all-in-one-0.1.0-preview.1-linux-x86_64.tar.gz

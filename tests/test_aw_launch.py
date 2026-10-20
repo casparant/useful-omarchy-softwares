@@ -150,16 +150,15 @@ class LaunchTests(unittest.TestCase):
         self.assertEqual(config.read_bytes(), original)
         self.assertEqual(self.document["spec"]["events"]["custom"]["steps"], ["preserve"])
 
-    def test_native_login_is_interactive_and_configuration_survives_cancel(self):
+    def test_native_authentication_stays_in_the_aw_managed_session(self):
         config = self.existing()
         original = config.read_bytes()
         self.logged_in = False
-        with self.assertRaisesRegex(launch.SetupError, "cancelled"):
-            self.prepare(["n"])
+        args = self.prepare()
         self.assertEqual(config.read_bytes(), original)
-        self.assertFalse(any(call[-1] == "login" for call in self.calls))
-        self.prepare(["yes"])
-        self.assertIn([str(self.qoder), "login"], self.calls)
+        self.assertEqual(args, [str(self.prefix / "bin/aw"), "run", "--config",
+                                str(config), "--agent", "qoder"])
+        self.assertFalse(any(call[-1] in ("login", "status") for call in self.calls))
 
     def test_pat_is_forwarded_in_environment_without_storing_or_printing_it(self):
         config = self.existing()

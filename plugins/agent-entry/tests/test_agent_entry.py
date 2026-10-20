@@ -21,6 +21,9 @@ class EntryTest(unittest.TestCase):
         self.addCleanup(locale.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
+        environment = patch.dict(entry.os.environ, {"XDG_CONFIG_HOME": self.temp.name})
+        environment.start()
+        self.addCleanup(environment.stop)
         self.cfg = Path(self.temp.name) / "agent-entry.json"
         self.patcher = patch.object(entry, "config_path", return_value=self.cfg)
         self.patcher.start()
@@ -36,7 +39,13 @@ class EntryTest(unittest.TestCase):
             self.assertEqual(run.call_args.args[0], ["/usr/bin/aw-launch"])
             self.assertTrue(run.call_args.kwargs["check"])
 
-    def test_status_does_not_spawn_or_read_credentials(self) -> None:
+    def test_custom_aw_launcher_does_not_probe_packaged_state(self):
+        entry.save_config({"version": 1, "commands": {"aw": ["/custom/aw"]}, "agents": []})
+        with patch.object(entry._aw, "snapshot") as snapshot:
+            self.assertEqual(entry.snapshot()["aw"]["state"], "unsupported_launcher")
+            snapshot.assert_not_called()
+
+    def test_status_without_aw_configuration_does_not_spawn_or_read_credentials(self) -> None:
         with patch.object(entry, "which", return_value=None), patch.object(
             entry.subprocess, "Popen"
         ) as spawn:

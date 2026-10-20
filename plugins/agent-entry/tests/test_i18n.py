@@ -24,7 +24,7 @@ class LanguageTest(unittest.TestCase):
         config_patch = patch.object(entry, "config_path", return_value=self.config)
         config_patch.start()
         self.addCleanup(config_patch.stop)
-        locale_patch = patch.dict(entry.os.environ, {"LC_ALL": "", "LC_MESSAGES": "", "LANG": ""})
+        locale_patch = patch.dict(entry.os.environ, {"LC_ALL": "", "LC_MESSAGES": "", "LANG": "", "XDG_CONFIG_HOME": str(self.directory)})
         locale_patch.start()
         self.addCleanup(locale_patch.stop)
 
