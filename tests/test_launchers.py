@@ -1,6 +1,6 @@
 """Wrapper unit tests only: no native vendor executable, login, or daemon runs.
 
-Each test executes the real packaged shell wrapper with only its absolute vendor
+Each test executes the real packaged wrapper with only its absolute vendor
 executable path replaced by a temporary inert stub. The stub records arguments,
 working directory, and selected environment values. This does not establish that
 QoderWake or Qoder CLI runs on Linux or that their settings work at runtime.
@@ -38,7 +38,13 @@ class LauncherFixture(unittest.TestCase):
         self.recorder.write_text(
             "import json, os, pathlib, sys\n"
             "pathlib.Path(os.environ['WRAPPER_TEST_MARKER']).write_text('called')\n"
+            "args = sys.argv[1:]\n"
+            "settings = json.loads(pathlib.Path(args[args.index('--settings') + 1]).read_text()) if '--settings' in args else None\n"
+            "info = os.stat(args[args.index('--settings') + 1]) if settings is not None else None\n"
             "print(json.dumps({\n"
+            "    'settings': settings,\n"
+            "    'settings_mode': info.st_mode & 0o777 if info else None,\n"
+            "    'settings_links': info.st_nlink if info else None,\n"
             "    'args': sys.argv[1:], 'cwd': os.getcwd(),\n"
             "    'env': {key: os.environ.get(key) for key in\n"
             "            ['HOME', 'QODER_ENV', 'QODERCLI_PATH', 'WRAPPER_TEST_SENTINEL']}\n"
@@ -135,24 +141,85 @@ class WakeLauncherTests(LauncherFixture):
 
 
 class CLILauncherTests(LauncherFixture):
-    recipe = "pkgbuilds/qodercli-bin/qodercli.sh"
+    recipe = "pkgbuilds/qodercli-bin/qodercli.py"
     vendor = "/opt/qodercli/qodercli"
-    shell = "sh"
+    shell = "python3"
 
-    def test_settings_are_prepended_without_changing_user_arguments(self):
+    def setUp(self):
+        super().setUp()
+        self.policy = self.root / "pacman-settings.json"
+        self.policy.write_bytes((ROOT / "pkgbuilds/qodercli-bin/pacman-settings.json").read_bytes())
+        self.wrapper.write_text(self.wrapper.read_text().replace(CLI_SETTINGS, str(self.policy)))
+        self.temp = self.root / "tmp"
+        self.temp.mkdir()
+        self.environment["TMPDIR"] = str(self.temp)
+
+    def assert_settings(self, record, expected, forwarded):
+        self.assertEqual(record["args"][0], "--settings")
+        self.assertEqual(record["args"][2:], forwarded)
+        self.assertEqual(record["settings"], expected)
+        self.assertEqual(record["settings_mode"], 0o600)
+        self.assertEqual(record["settings_links"], 0)
+        self.assertEqual(list(self.temp.iterdir()), [])
+
+    def test_update_policy_preserves_arguments_and_environment(self):
         args = ["chat", "argument with spaces", "literal;argument", "$HOME"]
         record = self.record(args, {"QODER_ENV": "test", "QODERCLI_PATH": "/user/selected-cli"})
-        self.assertEqual(record["args"], ["--settings", CLI_SETTINGS] + args)
+        self.assert_settings(record, {"general": {"enableAutoUpdate": False}}, args)
         self.assertEqual(record["env"]["QODER_ENV"], "test")
         self.assertEqual(record["env"]["QODERCLI_PATH"], "/user/selected-cli")
         self.assert_common_state(record)
         settings = json.loads((ROOT / "pkgbuilds/qodercli-bin/pacman-settings.json").read_text())
         self.assertIs(settings["general"]["enableAutoUpdate"], False)
 
-    def test_explicit_user_settings_argument_is_forwarded(self):
-        # This checks forwarding order, not native CLI settings precedence.
-        args = ["--settings", "user config with spaces.json", "chat", "hello"]
-        self.assertEqual(self.record(args)["args"], ["--settings", CLI_SETTINGS] + args)
+    def test_aw_hooks_and_native_preferences_survive_with_update_disabled(self):
+        hooks = {event: [{"matcher": "*", "hooks": [
+            {"type": "command", "command": "/opt/aw/bin/aw", "args": ["hook", "--event", event]},
+            {"type": "command", "command": "/opt/user/after", "args": ["literal;argument"]},
+        ]}] for event in ["PreToolUse", "PostToolUse"]}
+        source = {"hooks": hooks, "permissions": {"allow": ["Bash(printf:*)"]},
+                  "general": {"enableAutoUpdate": True, "preferredEditor": "vim"}}
+        selected = self.root / "user config with spaces.json"
+        selected.write_text(json.dumps(source))
+        before = selected.read_bytes()
+        record = self.record(["--settings", str(selected), "-p", "hello"])
+        expected = dict(source, general={"enableAutoUpdate": False, "preferredEditor": "vim"})
+        self.assert_settings(record, expected, ["-p", "hello"])
+        self.assertEqual(selected.read_bytes(), before)
+        self.assertEqual(record["args"].count("--settings"), 1)
+
+    def test_inline_settings_and_equals_form(self):
+        for flag in [["--settings", '{"hooks":{"PreToolUse":[]}}'],
+                     ['--settings={"hooks":{"PreToolUse":[]}}']]:
+            with self.subTest(flag=flag):
+                self.assert_settings(self.record(flag + ["--help"]),
+                                     {"hooks": {"PreToolUse": []}, "general": {"enableAutoUpdate": False}},
+                                     ["--help"])
+
+    def test_commented_settings_preserve_strings_and_trailing_commas(self):
+        selected = self.root / "comments.json"
+        selected.write_text('''// native JSON settings
+{"general": {/* comment */ "preferredEditor": "https://example.test/a/*b*/",},
+ "hooks": {"PreToolUse": []},}''')
+        self.assert_settings(self.record(["--settings", str(selected)]),
+                             {"general": {"preferredEditor": "https://example.test/a/*b*/", "enableAutoUpdate": False},
+                              "hooks": {"PreToolUse": []}}, [])
+
+    def test_separator_preserves_literal_settings_in_query(self):
+        args = ["--", "--settings", "literal query"]
+        self.assert_settings(self.record(args), {"general": {"enableAutoUpdate": False}}, args)
+
+    def test_invalid_settings_never_launch_vendor(self):
+        for args in [["--settings"], ["--settings="], ["--settings", "missing.json"],
+                     ["--settings", "[]"], ["--settings", "{invalid}"],
+                     ["--settings", '{"general":false}'],
+                     ["--settings", "{}", "--settings", "{}"]]:
+            with self.subTest(args=args):
+                result = self.run_wrapper(args)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("qodercli:", result.stderr)
+                self.assertFalse(self.marker.exists())
+                self.assertEqual(list(self.temp.iterdir()), [])
 
     def test_direct_update_never_launches_vendor(self):
         result = self.run_wrapper(["update"])

@@ -79,6 +79,14 @@ def which(command: str) -> str | None:
 def catalog() -> list[dict[str, Any]]:
     return [
         dict(
+            id="aw",
+            name="AW",
+            kind="terminal",
+            candidates=["/usr/bin/aw-launch"],
+            subtitle=tr("Tokenless 压缩 · 可选安全检查", "Tokenless compression · optional security"),
+            docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/aw-preview/README.md",
+        ),
+        dict(
             id="cosh",
             name="cosh-ng",
             kind="terminal",

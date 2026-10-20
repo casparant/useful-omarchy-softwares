@@ -44,6 +44,16 @@ def main():
               "qoder-ide-bin": ["/usr/share/qoder-ide/qoder-ide"],
               "clash-verge-rev-bin": ["/usr/bin/clash-verge", "/usr/bin/clash-verge-service",
                                        "/usr/bin/clash-verge-service-install", "/usr/bin/clash-verge-service-uninstall"]}
+    if args.package == "aw-preview":
+        prefix = Path("/usr/bin/aw").resolve().parents[1]
+        native[args.package] = [str(prefix / path) for path in (
+            "bin/aw", "bin/aw-package",
+            "libexec/aw/providers/tokenless/aw-provider-tokenless",
+            "libexec/aw/providers/tokenless/tokenless", "libexec/aw/providers/tokenless/rtk",
+            "libexec/aw/providers/sec-core/aw-provider-sec-core",
+            "libexec/aw/providers/sec-core/agent-sec-cli",
+            "libexec/aw/providers/sec-core/agent-sec-daemon",
+            "libexec/aw/providers/sec-core/agent-sec-daemon-health")]
     # GUI paths may vary: locate their installed main ELF via package-specific map.
     for executable in native.get(args.package, []):
         if not Path(executable).is_file():
@@ -79,6 +89,9 @@ def main():
                 if flag == "--version" and fields["pkgver"][0] not in result.stdout:
                     raise ValueError("installed binary reports an unexpected version: " + result.stdout[:1000])
                 print("{} {}: passed".format(command, flag))
+    if args.package == "aw-preview":
+        run("runuser", "-u", "builder", "--", "python", str(ROOT / "tools/aw_verify.py"),
+            str(prefix), cwd="/tmp", timeout=120)
     owned = run("pacman", "-Qlq", args.package, text=True, stdout=subprocess.PIPE)
     # Shared directories may remain; every package-owned non-directory must go.
     owned_files = [Path(line) for line in owned.stdout.splitlines() if line and not line.endswith("/")]

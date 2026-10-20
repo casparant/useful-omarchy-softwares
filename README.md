@@ -13,6 +13,14 @@ git clone https://github.com/casparant/useful-omarchy-softwares.git
 cd useful-omarchy-softwares
 ```
 
+**一条命令安装并启动 AW（Tokenless + 可选 sec-core）：**
+
+```bash
+./omarchy-tools aw
+```
+
+自动下载固定版本的 x86_64 / ARM64 二进制，安装 Qoder CLI、AW 和面板，并继续首次配置与原生登录。无需 Rust 编译；保留正常安装确认和可选安全授权。之后在面板点击 **AW**。来源、要求和升级说明见 [AW 包说明](pkgbuilds/aw-preview/README.md)。
+
 **一条命令装面板：**
 
 ```bash
@@ -73,6 +81,7 @@ git pull --ff-only
 | Qoder Desktop 0.4.8 | [qoder-bin](pkgbuilds/qoder-bin/README.md) | x86_64 | 本地候选；待 Linux/Wayland 验证 |
 | Qoder IDE 1.33.0 | [qoder-ide-bin](pkgbuilds/qoder-ide-bin/README.md) | x86_64 | 本地候选；待 Linux/Wayland 验证 |
 | Clash Verge Rev 2.5.8 | [clash-verge-rev-bin](pkgbuilds/clash-verge-rev-bin/README.md) | x86_64 / aarch64 | 双架构下载、ELF 与暂存通过；待 Linux 验证 |
+| AW Preview | [aw-preview](pkgbuilds/aw-preview/README.md) | x86_64 / aarch64 | 固定预编译包；一键安装/首次配置，Panel AW 入口与可选 sec-core |
 | 钉钉 | [安装与调研](docs/software/dingtalk.md) | 上游配方声明双架构 | Omarchy 已有 dingtalk-bin，不重复打包 |
 
 完整来源、维护归属和验证状态见 [catalog.json](catalog.json)。`aarch64` 指 Linux ARM64；不会将 x86 软件改标为 ARM。GUI 两包目前没有确认官方 Linux ARM 产物。

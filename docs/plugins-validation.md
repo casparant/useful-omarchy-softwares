@@ -1,13 +1,13 @@
 # Agent Entry 验证记录
 
-当前版本 0.3.1，保留 `anolisa.agent-entry` ID。公开源码来源、固定提交与 Apache-2.0 声明见 [ORIGIN](../plugins/agent-entry/ORIGIN.md)。0.3.0 及更早记录在 Darwin arm64 / Python 3.9.6 上产生；0.3.1 起补有 Omarchy 实机结果，见下节。
+当前版本 0.4.1，保留 `anolisa.agent-entry` ID。公开源码来源、固定提交与 Apache-2.0 声明见 [ORIGIN](../plugins/agent-entry/ORIGIN.md)。0.3.0 及更早记录在 Darwin arm64 / Python 3.9.6 上产生；0.4.1 起补有 Omarchy 实机结果，见下节。
 
-## 2026-10-20 · 0.3.1 GUI 窗口聚焦
+## 2026-10-20 · 0.4.1 GUI 窗口聚焦
 
 - 现象：Qoder 已在运行时点击面板「Open」没有任何反应。根因不是检测或部署问题——`status` 报 `available=true / Ready to launch`，部署副本与源码一致。实际链路是 `command_for()` → `gtk-launch qoder`，而 `qoder.desktop` 没有 `DBusActivatable=true`；新进程撞上应用的单实例锁后移交并退出，没有任何一方要求合成器把已存在的窗口拿到前台。实机观测到瞬时新主进程 PID 8719 自行退出、GUI 主实例仍为 4588。
 - 修改：GUI 入口先请合成器聚焦现有窗口，聚焦失败或应用未运行才照常发起进程。类名取自桌面文件的 `StartupWMClass` 并锚定为 `^…$`（不锚定时 `qoder` 会匹配到 `qoder-ide` 的窗口）；缺少 `omarchy`、缺少桌面文件或窗口不存在时行为与修改前一致。
 - 附带修正一个测试隔离缺陷：`command_for()` 会扫描真实 `/usr/share/applications`，而旧用例只隔离 `Path.home()`，因此**在装有 `qoder.desktop` 的 Linux 主机上必然失败**。桌面根目录收敛到 `desktop_dirs()` 后由用例注入。
-- Omarchy 实机（BUILD_ID 4.0.5，`x86_64`，Linux 7.2.8-9-omarchy，Hyprland + Wayland，Python 3.14.8）：`tools/check-plugin` 与官方 manifest 校验、`tools/check-package` 四份配方、根目录测试 **80 项**、插件测试 **41 项**（新增 4 项聚焦用例）全部通过，合计 **121 项**。
+- Omarchy 实机（BUILD_ID 4.0.5，`x86_64`，Linux 7.2.8-9-omarchy，Hyprland + Wayland，Python 3.14.8）：`tools/check-plugin` 与官方 manifest 校验、`tools/check-package` 四份配方、根目录测试 **119 项**、插件测试 **42 项**（含本修改新增的 4 项聚焦用例）全部通过，合计 **161 项**；`tools/check-package` 覆盖合并后 6 份配方。
 - 实机功能确认：`agent_entry.py launch qoder` 返回 `Qoder is already running; its window was brought forward.`，GUI 主实例计数保持不变，`hyprctl activewindow` 复核为 `class=qoder`；不存在的入口 `omarchy hyprland focus app nosuchapp-xyz` 退出码 1。已通过 `install.py --replace` 部署到 `~/.config/omarchy/plugins/anolisa.agent-entry`，旧目录备份在 `~/.config/anolisa/plugin-backups/`。
 - 仍未验收：Quickshell 宿主内的 `BarWidget.qml` / `Dashboard.qml` 点击链路、面板实际交互、登录流程、`aarch64`，以及 Linux 包安装生命周期。上述为助手脚本层结果。
 - 环境性发现（供后续脚本参考）：Omarchy 4 的 Hyprland 0.56 Lua 配置下，传统 `hyprctl dispatch <子命令> <参数>` 会被当作 Lua 源码解析并失败（`dispatch workspace 1`、`dispatch exit`、`dispatch "exec, true"` 均报错），可用形式是 `hyprctl dispatch 'hl.dsp.focus({ window = "address:…" })'`；`omarchy-hyprland-focus-app` 已封装该差异。

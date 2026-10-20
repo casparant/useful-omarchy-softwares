@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=AW
+Comment=Launch your agent with compression and optional security checks
+Exec=/usr/lib/aw-preview/aw-launch
+Icon=utilities-terminal
+Terminal=true
+Categories=Development;
+Keywords=Agent;Qoder;Tokenless;

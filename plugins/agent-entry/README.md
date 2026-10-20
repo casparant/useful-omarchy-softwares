@@ -2,9 +2,12 @@
 
 <!-- Modified 2026-10-19: bilingual UI, persisted language choice and English demonstration setup. -->
 
-通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.3.1**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
+通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.4.1**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
 
 源码来自公开 ANOLISA 实验，采用 **Apache-2.0**；详见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和固定版本的[来源与修改记录](ORIGIN.md)。本目录不适用仓库原创代码的 0BSD 许可。
+
+
+AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-core 的首次配置或日常 `aw run`。从仓库根目录执行 `./omarchy-tools aw` 可一次完成软件安装、面板部署与首次启动；后续点击 AW 卡片。Qoder CLI 卡片仍是原生直连入口。仅检测到入口不代表 Provider 已生效。
 
 ## 功能与打包边界
 
@@ -153,7 +156,7 @@ python3 -m unittest discover -s tests -v
 omarchy plugin validate .
 ```
 
-0.2.0 于 2026-10-17 在 macOS 的 Python 3.9.6 上通过 24 项隔离测试，5 个 Python 文件均通过源码编译检查。0.3.0 新增语言选择、locale 回退、双语界面及菜单资源检查；本轮结果见[验证记录](https://github.com/casparant/useful-omarchy-softwares/blob/main/docs/plugins-validation.md)。0.3.1 在 Omarchy 4.0.5 `x86_64`（Python 3.14.8）实机通过 41 项测试，并在同机确认聚焦链路本身可用：`omarchy hyprland focus app '^qoder$'` 退出码 0，`hyprctl activewindow` 复核为 `class=qoder`，未运行的应用退出码 1。这是助手脚本层的结果，不代表 Quickshell 面板点击链路已经验收。自动化测试覆盖命令隔离、参数数组、配置、安装说明链接、Wake 启动参数、旧 Codex 发现回退、自定义 XDG 配置与官方插件路径、升级预检、备份升级和可恢复卸载。它们不代替软件本体运行。可选真实 QtQuick 排版测试需要开发环境安装 PySide6，部署不依赖它：
+0.2.0 于 2026-10-17 在 macOS 的 Python 3.9.6 上通过 24 项隔离测试，5 个 Python 文件均通过源码编译检查。0.3.0 新增语言选择、locale 回退、双语界面及菜单资源检查；本轮结果见[验证记录](https://github.com/casparant/useful-omarchy-softwares/blob/main/docs/plugins-validation.md)。0.4.1 在 Omarchy 4.0.5 `x86_64`（Python 3.14.8）实机、合并 0.4.0 之后通过 42 项插件测试与 119 项仓库测试，并在同机确认聚焦链路本身可用：`omarchy hyprland focus app '^qoder$'` 退出码 0，`hyprctl activewindow` 复核为 `class=qoder`，未运行的应用退出码 1。这是助手脚本层的结果，不代表 Quickshell 面板点击链路已经验收。自动化测试覆盖命令隔离、参数数组、配置、安装说明链接、Wake 启动参数、旧 Codex 发现回退、自定义 XDG 配置与官方插件路径、升级预检、备份升级和可恢复卸载。它们不代替软件本体运行。可选真实 QtQuick 排版测试需要开发环境安装 PySide6，部署不依赖它：
 
 ```bash
 python3 -m venv /tmp/agent-entry-qt

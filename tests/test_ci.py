@@ -78,6 +78,23 @@ class VerifyInstallTests(unittest.TestCase):
             verify.main()
         return output.getvalue()
 
+    def test_aw_checks_all_binaries_and_runs_offline_contract_smoke(self):
+        original_resolve = Path.resolve
+        def resolve(path, *args, **kwargs):
+            if str(path) == "/usr/bin/aw":
+                return Path("/opt/aw-preview/test/bin/aw")
+            return original_resolve(path, *args, **kwargs)
+        with mock.patch.object(Path, "resolve", resolve):
+            self.invoke("aw-preview")
+        commands = [call[0] for call in self.calls]
+        native = [args for args in commands if args[0] == "ldd"]
+        self.assertEqual(len(native), 9)
+        self.assertIn(("ldd", "/opt/aw-preview/test/libexec/aw/providers/tokenless/rtk"), native)
+        smoke = [args for args in commands if any(str(arg).endswith("tools/aw_verify.py") for arg in args)]
+        self.assertEqual(len(smoke), 1)
+        self.assertEqual(smoke[0][:5], ("runuser", "-u", "builder", "--", "python"))
+        self.assertFalse(any(args[-1:] == ("--version",) for args in commands))
+
     def test_ide_main_executable_is_checked_at_real_install_location(self):
         output = self.invoke("qoder-ide-bin")
         commands = [call[0] for call in self.calls]

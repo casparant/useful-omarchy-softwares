@@ -67,6 +67,7 @@ Item {
         }
         stderr: StdioCollector { onStreamFinished: root.actionError = text }
         onExited: function(code, status) {
+            if (code === 0 && actionProcess.command[2] === "launch") root.close()
             if (code !== 0 && root.actionError) content.message = root.actionError
             refreshTimer.restart()
         }

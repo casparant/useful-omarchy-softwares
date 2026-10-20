@@ -2,12 +2,12 @@
 # Do not submit a second qodercli-bin package to AUR.
 pkgname=qodercli-bin
 pkgver=1.1.73
-pkgrel=1
+pkgrel=2
 pkgdesc='Qoder CLI native executable, packaged for pacman'
 arch=('x86_64' 'aarch64')
 url='https://qoder.com/cli'
-license=('LicenseRef-Qoder')
-depends=('bash')
+license=('LicenseRef-Qoder' '0BSD')
+depends=('bash' 'python')
 depends_x86_64=('glibc>=2.28')
 depends_aarch64=('glibc>=2.34')
 optdepends=('git: work with Git repositories'
@@ -17,11 +17,11 @@ provides=('qodercli' 'qoderclibin')
 conflicts=('qodercli' 'qoder-cli')
 # The Bun executable contains appended application data; stripping can break it.
 options=('!strip' '!debug')
-source=('qodercli.sh' 'pacman-settings.json' 'LICENSE')
+source=('qodercli.py' 'pacman-settings.json' 'LICENSE' 'LICENSE.launcher')
 # Use the vendor's baseline x64 build rather than assuming AVX2 support.
 source_x86_64=("qodercli-${pkgver}-x86_64.tar.gz::https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/${pkgver}/qodercli-linux-x64-baseline.tar.gz")
 source_aarch64=("qodercli-${pkgver}-aarch64.tar.gz::https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/${pkgver}/qodercli-linux-arm64.tar.gz")
-sha256sums=('34636a364e687efbcf15e8db0982af80eb529a0fed40b8686098f69d4e5ba132' '6a813a4a219dc135b96f50290e3b4e785577f9d9cd6174039eeb3d4618cfd180' '4a39646e58dcdc264e38863fdb2969aef0f5e8fa667df02b1011bc9f68d8bf61')
+sha256sums=('dd961dc7d1e7c3fcce4c81fe0c759ac83dd5b46bc2f4da81c78a494d6c5febb1' '6a813a4a219dc135b96f50290e3b4e785577f9d9cd6174039eeb3d4618cfd180' '4a39646e58dcdc264e38863fdb2969aef0f5e8fa667df02b1011bc9f68d8bf61' '24e67b47c9220aee2ac48e6dafe218f7fd2f5bd2f7f1ec7784fb66f31472ea63')
 sha256sums_x86_64=('b8f5cddaa851c1847c8575e696e567703bf06c86cd736853cc65714580d4cbab')
 sha256sums_aarch64=('aed01a40653c116bfd9a0bbf10e1c015e7fd7d2697512afe69d501e235aa6402')
 
@@ -34,7 +34,8 @@ package() {
   esac
 
   install -Dm755 "$srcdir/qodercli" "$pkgdir/opt/qodercli/qodercli"
-  install -Dm755 "$srcdir/qodercli.sh" "$pkgdir/usr/bin/qodercli"
+  install -Dm755 "$srcdir/qodercli.py" "$pkgdir/usr/bin/qodercli"
   install -Dm644 "$srcdir/pacman-settings.json" "$pkgdir/usr/share/qodercli/pacman-settings.json"
   install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$srcdir/LICENSE.launcher" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.launcher"
 }

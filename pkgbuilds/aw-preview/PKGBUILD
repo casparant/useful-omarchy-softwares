@@ -1,0 +1,50 @@
+# Prebuilt demo from one reviewed upstream commit; not an official AW release.
+pkgname=aw-preview
+pkgver=0.1.0.preview20261020
+pkgrel=1
+pkgdesc='AW agent launcher with Tokenless/RTK and optional sec-core integration (Preview)'
+arch=('x86_64' 'aarch64')
+url='https://github.com/agentic-os-org/ANOLISA/tree/main/src/aw'
+license=('Apache-2.0' '0BSD')
+depends=('glibc>=2.39' 'gcc-libs' 'openssl' 'python')
+optdepends=('qodercli-bin: Qoder native agent entrypoint'
+            'nodejs: OpenClaw native agent runtime'
+            'sudo: authorize the optional security service in first-time setup')
+# Receipts and the generated RTK digest must describe the actual installed bytes.
+options=('!strip' '!debug' '!lto')
+_commit=696e1aa0c02e9c6a6817bc68c2101f7034d52c59
+_version=0.1.0-preview.1
+_prefix="/opt/aw-preview/${pkgver}-${pkgrel}"
+_release=https://github.com/kongche-jbw/anolisa/releases/download/aw-demo-20261020-696e1aa0
+source=('aw-preview-sec-core.service' 'skillsec.json' 'aw-launch.py' 'aw-preview.desktop' 'LICENSE.launcher')
+sha256sums=('4a8efcea38a26bf8c2976ac1d6a7d0f8b47f58030cf8747abc7130b53c0ed51f' '9746897ca19b53504d77de14d8c8de12482c2fb636fbad52b31c90e96cb6061f' '1bec4bd9f3696dd09b241405b541567285644fba0e6a38983c7343e663112138' 'f32a6c915c02cc3e582b726cac1b40b318c732b3039d2c7735fc42638c2521a4' '24e67b47c9220aee2ac48e6dafe218f7fd2f5bd2f7f1ec7784fb66f31472ea63')
+source_x86_64=("$_release/aw-all-in-one-$_version-linux-x86_64.tar.gz")
+sha256sums_x86_64=('166db7c4c81d17c690bd7474c46f2d1a936c50c6d54729a3a8fa84e038d7ff86')
+source_aarch64=("$_release/aw-all-in-one-$_version-linux-aarch64.tar.gz")
+sha256sums_aarch64=('346442b306b0fd03d929f31efc52b400186d671cbeef9f08cc985cce02123f6f')
+
+build() {
+  # The verified native installer writes only to this private build directory.
+  # No compilation, service activation or system installation occurs here.
+  install -dm700 "$srcdir/aw-stage"
+  "$srcdir/aw-all-in-one-$_version-linux-$CARCH/aw-package" install --prefix "$srcdir/aw-stage/staged"
+}
+
+package() {
+  install -dm755 "$pkgdir$_prefix" "$pkgdir/usr/bin"
+  cp -a "$srcdir/aw-stage/staged/." "$pkgdir$_prefix/"
+  ln -s "$_prefix/bin/aw" "$pkgdir/usr/bin/aw"
+  ln -s "$_prefix/bin/aw-package" "$pkgdir/usr/bin/aw-package"
+  install -Dm644 "$srcdir/aw-stage/staged/share/doc/aw-core/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$srcdir/aw-stage/staged/share/doc/aw-core/NOTICE" "$pkgdir/usr/share/licenses/$pkgname/NOTICE"
+  install -Dm644 "$srcdir/LICENSE.launcher" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.launcher"
+  install -Dm644 "$srcdir/skillsec.json" \
+    "$pkgdir/usr/share/aw-preview/skillsec.json"
+  install -Dm644 "$srcdir/aw-preview-sec-core.service" \
+    "$pkgdir/usr/lib/systemd/system/aw-preview-sec-core.service"
+  sed -i "s|@PREFIX@|$_prefix|g" "$pkgdir/usr/lib/systemd/system/aw-preview-sec-core.service"
+  install -Dm755 "$srcdir/aw-launch.py" "$pkgdir/usr/lib/aw-preview/aw-launch"
+  sed -i "s|@PREFIX@|$_prefix|g" "$pkgdir/usr/lib/aw-preview/aw-launch"
+  ln -s /usr/lib/aw-preview/aw-launch "$pkgdir/usr/bin/aw-launch"
+  install -Dm644 "$srcdir/aw-preview.desktop" "$pkgdir/usr/share/applications/aw-preview.desktop"
+}
