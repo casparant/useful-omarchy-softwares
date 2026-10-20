@@ -1,6 +1,6 @@
 # Qoder CLI：`qodercli-bin`
 
-状态：本地候选配方，版本 `1.1.73-1`，支持 `x86_64` 和 `aarch64`。已完成上游归档校验和、ELF 架构/动态依赖静态检查，以及双架构 `package()` 目录装配检查（在 macOS 上适配 `install` / `readelf`，核对文件、权限和原始二进制哈希）；**尚未在 Linux 上完成 makepkg、安装、登录或会话实测**。本目录是供现有 AUR/Omarchy 维护流程评审的候选，不向 AUR 新建重复包，不发布二进制。
+状态：本地候选配方，版本 `1.1.73-2`，支持 `x86_64` 和 `aarch64`。已完成上游归档校验和、ELF 架构/动态依赖静态检查，以及双架构 `package()` 目录装配检查（在 macOS 上适配 `install` / `readelf`，核对文件、权限和原始二进制哈希）；另在 Omarchy ARM64 完成 makepkg、安装、包完整性及经默认入口连接 AW 的真实模型、压缩、安全拒绝、RTK 重试、原生禁用、外部 After Hook、后台失联阻断和包升级验证；x86_64 运行、网页登录和中文输入尚待实测。本目录是供现有 AUR/Omarchy 维护流程评审的候选，不向 AUR 新建重复包，不发布二进制。
 
 ## 安装与入口
 
@@ -10,7 +10,7 @@
 cd pkgbuilds/qodercli-bin
 makepkg --verifysource
 makepkg -s
-sudo pacman -U ./qodercli-bin-1.1.73-1-*.pkg.tar.zst
+sudo pacman -U ./qodercli-bin-1.1.73-2-*.pkg.tar.zst
 qodercli --version
 qodercli --help
 ```
@@ -19,7 +19,7 @@ qodercli --help
 
 - 用户入口为 `/usr/bin/qodercli`；供应商原生程序放在 `/opt/qodercli/qodercli`。官方文档中的 CLI `qoder` 命令，在本包中改用 `qodercli`。
 - 不创建 `/usr/bin/qoder`，为 Qoder 桌面应用保留同名命令，避免两个组件相互覆盖。
-- 不要求 Node.js；这里使用官方原生可执行文件，不是 npm 发行版。
+- 不要求 Node.js；这里使用官方原生可执行文件，不是 npm 发行版。包启动器依赖系统 Python，供应商程序字节保持不变。
 - QoderWake 使用自己固定版本的私有 CLI，本包不为它提供或替换后端。
 - 包构建、安装均不登录、不运行厂商安装脚本、不启动后台程序、不修改用户配置。登录和开始会话由用户运行程序触发。
 
@@ -40,9 +40,13 @@ qodercli --help
 
 官方[安装与升级文档](https://docs.qoder.com/cli/installation)说明自动更新默认开启，可通过 `general.enableAutoUpdate=false` 关闭；[配置优先级文档](https://docs.qoder.com/cli/settings)说明 `--settings` 的设置高于用户和项目文件，并进行深度合并。
 
-启动器注入包内 `/usr/share/qodercli/pacman-settings.json`，默认关闭自动更新，同时保留用户其余设置；常见的 `qodercli update` 会返回提示，要求使用包管理器升级。程序树由 root/pacman 管理，普通用户不能覆盖其中的原生程序。
+启动器把包内 `/usr/share/qodercli/pacman-settings.json` 与调用方的一份 `--settings` 组合后，仅向原生 CLI 传入一个设置文件。`general.enableAutoUpdate=false` 始终保留，其余调用方字段（包括 AW 的 PreTool/PostTool 和用户 Hook、权限及其他 general 设置）保持原值；不改写用户文件，也不把配置内容放进进程参数。
 
-**这不是对闭源更新器的完整审计或所有调用方式的拦截。** 用户显式传入另一个 `--settings` 参数可能改变启动设置，其他参数位置下的 `update`、TUI 内更新和进程派生行为仍待 Linux 实测。不要以 root 身份运行 CLI 或供应商自更新命令。验收时必须确认关闭自动更新后没有另下载用户目录副本并改变实际执行版本；发现此行为需修正后再发布。
+支持 `--settings FILE`、`--settings=FILE` 及内联 JSON 对象；文件支持 JSON 注释和尾逗号。组合配置是本次启动的快照，放在权限 0600、已取消文件名链接的临时文件，通过 `/proc/self/fd` 交给同 PID 的原生程序；进程退出后由系统回收。文件缺失、非法配置或重复的调用方 `--settings` 会报错并停止，避免悄悄丢失 Hook。`--` 后的字面参数原样保留。
+
+这修复了 1.1.73 的实际冲突：旧启动器前置一份设置，AW 再追加一份，而原生 CLI 对重复 `--settings` 只加载第一份，导致 AW Hook 被忽略。使用 AW 时直接选择默认 `/usr/bin/qodercli`，不需要绕过包入口。
+
+常见的 `qodercli update` 仍返回提示，要求使用包管理器升级。程序树由 root/pacman 管理，普通用户不能覆盖其中的原生程序。该策略不等于对闭源更新器的完整审计；TUI 内更新、其他参数位置的手动更新及长时间运行仍需单独验收。不要以 root 身份运行 CLI 或供应商自更新命令。
 
 `.omarchy/package.json` 使用 `sync: false`，无自动更新 hook。新增版本时先核对发布清单和两个平台的 URL，下载复算校验和，更新 `pkgver` / `pkgrel` / `sha256sums_*`，再在 Arch 中运行 `makepkg --printsrcinfo > .SRCINFO` 并完成双架构验收。
 
