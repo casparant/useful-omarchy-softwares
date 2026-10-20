@@ -42,15 +42,16 @@ Item {
                     if (result.error) content.message = result.error
                     else {
                         content.agents = result.agents
+                        content.aw = result.aw
                         content.project = result.project
                         content.configPath = result.config
                     }
-                } catch (e) { content.message = I18n.text(content.language, "status_error") + String(e) }
+                } catch (e) { content.aw = { state: "query_failed" }; content.message = I18n.text(content.language, "status_error") + String(e) }
             }
         }
         stderr: StdioCollector { onStreamFinished: root.statusError = text }
         onExited: function(code, status) {
-            if (code !== 0 && root.statusError) content.message = root.statusError
+            if (code !== 0) { content.aw = { state: "query_failed" }; content.message = root.statusError || I18n.text(content.language, "status_error") }
         }
     }
     Process {
@@ -72,6 +73,7 @@ Item {
             refreshTimer.restart()
         }
     }
+    Timer { interval: 5000; repeat: true; running: window.visible; onTriggered: root.refresh() }
     Timer { id: refreshTimer; interval: 200; onTriggered: root.refresh() }
 
     FloatingWindow {

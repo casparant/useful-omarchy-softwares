@@ -32,6 +32,10 @@ _i18n_spec = importlib.util.spec_from_file_location("agent_entry_i18n", ROOT / "
 _i18n = importlib.util.module_from_spec(_i18n_spec)
 _i18n_spec.loader.exec_module(_i18n)
 
+_aw_spec = importlib.util.spec_from_file_location("agent_entry_aw_status", ROOT / "aw_status.py")
+_aw = importlib.util.module_from_spec(_aw_spec)
+_aw_spec.loader.exec_module(_aw)
+
 
 def language_settings() -> dict[str, str]:
     """Read only the optional language field; never recurse through config errors."""
@@ -115,7 +119,7 @@ def catalog() -> list[dict[str, Any]]:
             name="Qoder CLI",
             kind="terminal",
             candidates=["qodercli"],
-            subtitle=tr("独立终端入口", "Native terminal launcher"),
+            subtitle=tr("直接启动，不经过 AW", "Direct launch, without AW"),
             docs="https://github.com/casparant/useful-omarchy-softwares/blob/main/pkgbuilds/qodercli-bin/README.md",
         ),
         dict(
@@ -276,6 +280,7 @@ def snapshot() -> dict[str, Any]:
     return {
         **language_settings(),
         "agents": output,
+        "aw": _aw.snapshot() if "argv" not in get_agent("aw") else _aw.empty("unsupported_launcher"),
         "project": str(project_dir(None)),
         "config": str(config_path()),
         "note": tr("检测只确认启动入口，不读取凭据，也不代表已经登录或任务正在运行。", "Detection checks launchers only. It does not read credentials or confirm sign-in or running tasks."),

@@ -73,6 +73,11 @@ def scroll_to_bottom():
 def click(name: str):
     item = find(name)
     point = item.mapToScene(item.boundingRect().center())
+    if point.y() < 0 or point.y() >= view.height():
+        area = flickable()
+        area.setProperty("contentY", max(0, min(area.property("contentHeight") - area.property("height"), area.property("contentY") + point.y() - view.height()/2)))
+        QTest.qWait(100)
+        point = item.mapToScene(item.boundingRect().center())
     assert 0 <= point.y() <= view.height(), (name, point, view.size())
     QTest.mouseClick(view, Qt.LeftButton, Qt.NoModifier, QPoint(round(point.x()), round(point.y())))
     QTest.qWait(80)
@@ -113,8 +118,27 @@ def capture():
         QTest.qWait(100)
         click("agentAction-aw")
         assert actions[-1] == ["launch", "aw", "--project", "/home/user/Projects/example"], actions
+        fixture = json.loads((ROOT / "tests/fixtures/panel-ok.json").read_text())
+        report = entry._aw.project(fixture)
+        report['security'] = {'configured': True, 'enabled': True, 'backend': 'authenticated_reachable'}
+        report['activities'] = [{'kind': 'optimization_retry', 'tone': 'notice', 'elapsed_ms': 4},
+                                {'kind': 'security_block', 'tone': 'danger', 'elapsed_ms': 8}]
+        root.setProperty("aw", report)
+        QTest.qWait(100)
+        assert find("awServiceState").property("text") == "AW is online"
+        click("awDetailsToggle")
+        assert find("awDetails").property("visible")
+        assert '3500' in find("awDetails").property("text")
+        click("awDetailsToggle")
+        root.setProperty("aw", entry._aw.empty('query_failed'))
+        QTest.qWait(100)
+        assert 'failed' in find("awServiceState").property("text")
+        assert '3500' not in find("awDetails").property("text")
+        root.setProperty("aw", report)
         click("agentAction-qoder")
         assert actions[-1] == ["docs", "qoder", "--project", "/home/user/Projects/example"], actions
+        flickable().setProperty("contentY", 0)
+        QTest.qWait(100)
         save()
         click("addEntry")
         dialog = find("registerDialog")
@@ -184,7 +208,7 @@ def capture():
 
 
 QTimer.singleShot(1200, capture)
-QTimer.singleShot(20000, lambda: app.exit(1))
+QTimer.singleShot(30000, lambda: app.exit(1))
 code = app.exec()
 temporary.cleanup()
 raise SystemExit(code)

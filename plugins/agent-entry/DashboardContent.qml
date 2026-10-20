@@ -9,6 +9,7 @@ Rectangle {
     id: root
     color: "#111827"
     property var agents: []
+    property var aw: null
     property string project: ""
     property string configPath: ""
     property string language: Qt.locale().name.toLowerCase().indexOf("zh") === 0 ? "zh" : "en"
@@ -70,6 +71,16 @@ Rectangle {
                 EntryButton { text: root.t("save_project"); enabled: !root.busy; onClicked: root.actionRequested(["project", projectField.text]) }
             }
 
+            AwWorkbench {
+                objectName: "awWorkbench"
+                Layout.fillWidth: true
+                language: root.language
+                report: root.aw
+                busy: root.busy
+                launcherAvailable: root.agents.some(function(agent) { return agent.id === "aw" && agent.available })
+                onLaunchRequested: root.actionRequested([launcherAvailable ? "launch" : "docs", "aw", "--project", projectField.text])
+            }
+
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: hero.implicitHeight + 36
@@ -118,7 +129,7 @@ Rectangle {
                 columnSpacing: 14
                 rowSpacing: 14
                 Repeater {
-                    model: root.agents.filter(function(agent) { return agent.id !== "cosh" })
+                    model: root.agents.filter(function(agent) { return agent.id !== "cosh" && agent.id !== "aw" })
                     delegate: Rectangle {
                         id: card
                         required property var modelData

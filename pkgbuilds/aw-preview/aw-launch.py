@@ -124,16 +124,10 @@ def prepare():
         if not Path(socket).is_absolute():
             raise SetupError("The security socket must be an absolute path.")
         health(socket)
-    qoder = agent["argv"][0]
-    if not os.environ.get("QODER_PERSONAL_ACCESS_TOKEN"):
-        status = command([qoder, "status"])
-        if "Not logged in" in status:
-            print("Qoder sign-in is required. The native login flow manages your credentials.")
-            if input("Open Qoder login now? [Y/n]: ").strip().lower() not in ("", "y", "yes"):
-                raise SetupError("Sign-in cancelled. Your AW configuration was kept.")
-            command([qoder, "login"], capture=False, timeout=300)
-            if "Not logged in" in command([qoder, "status"]):
-                raise SetupError("Qoder is not signed in. Reopen AW after completing native login.")
+    # The login subcommand is browser-only; interactive /login also offers PAT.
+    # Let Qoder own authentication inside the same AW-managed session.
+    print("In Qoder, use /login and choose Personal Access Token or browser sign-in. "
+          "Folder trust and tool permissions remain under Qoder's control.", flush=True)
     return [str(PREFIX / "bin/aw"), "run", "--config", str(config), "--agent", "qoder"]
 
 

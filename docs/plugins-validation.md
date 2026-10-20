@@ -1,6 +1,25 @@
 # Agent Entry 验证记录
 
-当前版本 0.4.1，保留 `anolisa.agent-entry` ID。公开源码来源、固定提交与 Apache-2.0 声明见 [ORIGIN](../plugins/agent-entry/ORIGIN.md)。0.3.0 及更早记录在 Darwin arm64 / Python 3.9.6 上产生；0.4.1 起补有 Omarchy 实机结果，见下节。
+当前版本 0.5.0，保留 `anolisa.agent-entry` ID。公开来源与 Apache-2.0 声明见 [ORIGIN](../plugins/agent-entry/ORIGIN.md)。
+
+## 2026-10-20 · 0.5.0 AW 工作台
+
+- Ubuntu ARM64 与 Omarchy ARM64 VM：根回归 119 项、插件回归 59 项通过。
+  复用六份上游 v1alpha1 fixture，覆盖离线、无数据、过期、不完整、组件缺失、非法数字与证据边界。
+  查询测试验证超时、输出上限、子进程回收、回执篡改、配置不变、未知状态和错误清除。
+- QtQuick / PySide6-Essentials 6.7.3 离屏测试通过中英文、宽窄布局、详情展开、失败清除及 AW 启动动作。
+  这些截图使用 fixture，与下面的实际 VM 后台验证区分。
+- Omarchy VM 从公开固定源下载包，makepkg 重打包和 pacman 安装通过；AW `pkgrel=2`、Qoder `1.1.73-2`。
+  `tools/check-plugin`、官方 manifest 校验、`tools/check-package --require-makepkg` 和已安装 AW 回执 smoke 通过。
+- 实际 Quickshell 显示 AW 状态、Tokenless 统计、独立的 sec-core 健康和活动。
+  通过生成的 Qoder Hook 输入集成样本，实际执行安全扫描、完成观察及压缩；停止安全服务后健康显示不可达，
+  PreTool 返回阻断，日常启动拒绝继续，恢复服务后健康恢复。配置字节不变。
+  **本轮没有模型调用**；样本产生的统计是后台集成测试证据，测试后已从默认存储移出。
+- `aw-launch` 进入真实 Qoder：项目目录信任保留，选择 Sign in to continue → Personal Access Token，
+  到达原生粘贴输入框。没有填写账户令牌，没有完成认证，不声称账号或浏览器登录通过。
+- 已安装旧版的 Quickshell 进程可能缓存旧 QML：VM 普通 rescan/disable/enable 后仍显示旧布局，
+  重启 Shell 后新工作台加载正常。文档提示升级后若仍为旧布局，重新登录桌面；不自动重启用户桌面。
+- x86_64 桌面、实际 PAT 认证、模型回合和注销重登仍需现场验收；双架构包 CI 与 ARM64 VM 结论分别记录。
 
 ## 2026-10-20 · 0.4.1 GUI 窗口聚焦
 

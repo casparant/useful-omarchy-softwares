@@ -10,8 +10,8 @@
 
 1. 接受默认 `/usr/bin/qodercli`，选择 Tokenless 或 Tokenless + sec-core。
 2. 启用安全检查时，通过 sudo 启动专用系统服务，认证健康检查成功后才生成配置。
-3. 已登录账号继续复用；未登录时进入 Qoder 原生登录。入口不保存令牌。
-4. 进入 Qoder 后即可请求工具操作。之后点击 Panel 的 **AW** 卡片，或执行 `aw-launch`。
+3. 已登录账号继续复用；未登录时在 Qoder 内选择 **Sign in to continue**（已进入会话时输入 `/login`），选择 **Use Qoder Personal Access Token** 并粘贴 PAT，也可选择浏览器登录。不要使用仅支持浏览器的 `qodercli login` 子命令代替此步骤；AW 入口不保存令牌。
+4. 进入 Qoder 后即可请求工具操作。之后点击 Panel 的 **AW 工作台**，或执行 `aw-launch`。
 
 Panel 的 **Qoder CLI** 是原生直连入口；**AW** 才会使用所选 Provider。安装后也可从应用菜单打开 AW。Panel 不把“找到命令”显示成“安全检查已生效”。已有配置、用户 Hook 与原生权限保留；日常启动只检查、复用安全后台，失联拒绝启动，不自动关闭安全策略。
 
@@ -19,20 +19,20 @@ Panel 的 **Qoder CLI** 是原生直连入口；**AW** 才会使用所选 Provid
 
 ## 固定二进制与来源
 
-本候选使用 [ANOLISA 696e1aa0](https://github.com/agentic-os-org/ANOLISA/tree/696e1aa0c02e9c6a6817bc68c2101f7034d52c59) 的同批 Preview 合同，交付 AW core、Tokenless/RTK 与 sec-core Provider/CLI/daemon。包内版本是 `0.1.0-preview.1`，Arch 快照版本是 `0.1.0.preview20261020-1`。不包含 Sight，不代表完整 Tokenless 或 sec-core 生命周期能力。
+本候选使用 [ANOLISA 696e1aa0](https://github.com/agentic-os-org/ANOLISA/tree/696e1aa0c02e9c6a6817bc68c2101f7034d52c59) 的同批 Preview 合同，交付 AW core、Tokenless/RTK 与 sec-core Provider/CLI/daemon。包内版本是 `0.1.0-preview.1`，Arch 快照版本是 `0.1.0.preview20261020-2`。不包含 Sight，不代表完整 Tokenless 或 sec-core 生命周期能力。
 
 下载来自维护者的[固定演示 Release](https://github.com/kongche-jbw/anolisa/releases/tag/aw-demo-20261020-696e1aa0)，不是 ANOLISA 正式发行。x86_64 来自[通过的上游 Integration](https://github.com/agentic-os-org/ANOLISA/actions/runs/39338250584)，aarch64 使用同一源码、Rust 1.97.1、锁定依赖与 `aw-build --component all` 在 Ubuntu 24.04 ARM64 原生构建。目标需要 glibc >= 2.39。配方为每个架构固定 URL 和 SHA256，不使用 `latest` 或会过期的 Actions 下载链接。
 
 `makepkg` 只做二进制重打包：上游原生安装器先校验清单，将文件放入私有构建暂存目录；`package()` 把暂存文件放入 pacman 包。系统安装由 pacman 管理，保留三份原始组件回执、文件哈希、权限、LICENSE/NOTICE 和 RTK 来源/补丁。不在包安装阶段启动服务或改用户配置，也不把 Qoder 厂商程序上传到本项目 Release。
 
-系统前缀为 `/opt/aw-preview/0.1.0.preview20261020-1`，命令为 `/usr/bin/aw`、`/usr/bin/aw-package` 和 `/usr/bin/aw-launch`。不要对 pacman 管理的前缀另行执行 `aw-package install/uninstall`。Qoder 使用本仓库 `qodercli-bin 1.1.73-2`，默认包装器同时保留禁止自更新和 AW Hook。
+系统前缀为 `/opt/aw-preview/0.1.0.preview20261020-2`，命令为 `/usr/bin/aw`、`/usr/bin/aw-package` 和 `/usr/bin/aw-launch`。不要对 pacman 管理的前缀另行执行 `aw-package install/uninstall`。Qoder 使用本仓库 `qodercli-bin 1.1.73-2`，默认包装器同时保留禁止自更新和 AW Hook。
 
 ## 首次配置与日常启动
 
 以普通用户执行，`--qoder` 换成实际已安装的绝对路径。配置和状态放在用户拥有的目录。若已有用户目录中的 `aw` / `aw-package` 链接，先核对 `command -v aw`，避免 PATH 仍选择旧包；下例显式使用本包的 `/usr/bin` 入口，不覆盖旧链接：
 
 ```bash
-AW_PREFIX=/opt/aw-preview/0.1.0.preview20261020-1
+AW_PREFIX=/opt/aw-preview/0.1.0.preview20261020-2
 install -dm700 "$HOME/.config/aw" "$HOME/.local/state/aw-preview"
 /usr/bin/aw-package configure --prefix "$AW_PREFIX" \
   --config "$HOME/.config/aw/preview.yaml" \
@@ -60,7 +60,7 @@ sudo systemctl enable --now aw-preview-sec-core.service
 以普通用户显式诊断（只探测已运行后台）：
 
 ```bash
-AW_PREFIX=/opt/aw-preview/0.1.0.preview20261020-1
+AW_PREFIX=/opt/aw-preview/0.1.0.preview20261020-2
 "$AW_PREFIX/libexec/aw/providers/sec-core/aw-provider-sec-core" --health \
   --helper "$AW_PREFIX/libexec/aw/providers/sec-core/agent-sec-daemon-health" \
   --socket /run/aw-preview-sec-core/daemon.sock

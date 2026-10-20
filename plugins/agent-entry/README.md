@@ -2,12 +2,40 @@
 
 <!-- Modified 2026-10-19: bilingual UI, persisted language choice and English demonstration setup. -->
 
-通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.4.1**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
+通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.5.0**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
 
 源码来自公开 ANOLISA 实验，采用 **Apache-2.0**；详见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和固定版本的[来源与修改记录](ORIGIN.md)。本目录不适用仓库原创代码的 0BSD 许可。
 
 
-AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-core 的首次配置或日常 `aw run`。从仓库根目录执行 `./omarchy-tools aw` 可一次完成软件安装、面板部署与首次启动；后续点击 AW 卡片。Qoder CLI 卡片仍是原生直连入口。仅检测到入口不代表 Provider 已生效。
+AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-core 的首次配置或日常 `aw run`。从仓库根目录执行 `./omarchy-tools aw` 可一次完成软件安装、面板部署与首次启动；后续点击 AW 工作台的「通过 AW 启动 Qoder」。Qoder CLI 卡片仍是原生直连入口。仅检测到入口不代表 Provider 已生效。
+
+## AW 工作台与首次登录
+
+工作台在面板可见时每 5 秒读取一次已安装 AW 的状态，收起后停止轮询。
+使用现有 `aw inspect --json` 和 sec-core 只读健康接口，不启动后台、不扫描项目、
+不执行压缩或修改策略。查询失败会清除旧数字并明确显示无法查询。
+
+- **AW**：展示后台在线、未运行、未配置或无法查询；在线不等于当前 Agent 已接入。
+- **Tokenless**：展示存储中最近最多 200 条记录的压缩前后估算 token 数、减少数量和比例。
+  这是组件历史统计，不是当前会话计费，也不代表全部模型上下文；无数据时显示「—」。
+- **sec-core**：分别展示策略是否配置/启用与后台是否认证可达；健康不代表准入或检查通过。
+- **最近活动**：展示当前 AW 后台实例最近步骤中的前 5 条。Tokenless 请求改写重试、
+  安全策略阻断、异常阻断、完成观察与压缩完成分别标注；不显示工具命令、输出或凭据。
+  「查看详情」仅展开同一份筛选后的展示数据。
+
+工作台识别预编译包和 `$XDG_CONFIG_HOME/aw/preview.yaml`（默认 `~/.config/aw/preview.yaml`）。
+显式覆盖 AW 启动命令时仍能启动，但不推断其状态。Qoder CLI 卡片为直接启动入口；
+需要 AW Hook 时使用工作台按钮，首次配置、目录信任与工具权限继续由终端和 Qoder 原生界面确认。
+Tokenless 请求重试后的命令仍要经过安全检查与原生权限；不建议为演示全局放行 `env`。
+
+演示电脑无需访问内网仓库。安装需要公开 GitHub、Arch/Omarchy 软件源和 Qoder 公开下载服务；
+登录与模型调用需要联网访问 Qoder 服务。在 [Qoder 账户集成页](https://qoder.com/account/integrations)
+创建 **Personal Access Token (PAT)**，与模型供应商的 `sk-` API Key 不同。
+首次 `./omarchy-tools aw` 配置后进入 Qoder，确认项目目录信任，选择 **Sign in to continue**（已进入会话时输入 `/login`），
+选择 **Use Qoder Personal Access Token** 并粘贴 PAT；浏览器登录也保留。
+注意 `qodercli login` 子命令只进入浏览器流程，PAT 入口是交互界面的 `/login`。
+不要把 PAT 填进 AW YAML、Panel 配置、shell 命令或截图；本插件不保存或读取凭据。
+公开认证说明见 [Qoder CLI authentication](https://docs.qoder.com/cli/authentication)。
 
 ## 功能与打包边界
 
@@ -36,7 +64,7 @@ AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-c
 
 需要提供 Quickshell 插件接口的 Omarchy 桌面会话、`omarchy`、`omarchy-shell`、**Python 3.9+**、`xdg-open`，以及 foot / kitty / alacritty / xterm 中的一种终端。`gtk-launch` 可用于桌面文件启动；没有它时尝试表中的命令。软件本体需单独安装。
 
-原型针对 Omarchy 4.0.1 开发。本次迁移完成源码、隔离测试和通用 QtQuick 离屏界面测试，尚未完成 Linux/Hyprland/Omarchy 实机验收。
+原型针对 Omarchy 4.0.1 开发。0.5.0 在 Omarchy ARM64 VM 验证，范围见下方测试与验收；x86_64 桌面仍需现场验收。
 
 在仓库中执行，使用当前图形会话的普通用户：
 
@@ -65,7 +93,7 @@ AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-c
 
 面板右上角「收起 / Close」右侧的语言按钮立即切换界面，并保存选择：中文界面显示 **English**，英文界面显示 **中文**。默认 `language: "auto"`，依次使用 `LC_ALL`、`LC_MESSAGES`、`LANG` 的第一个非空值；`zh` 系列 locale 使用中文，其余使用英语。可保存的值是 `auto`、`en`、`zh`；已有配置无需迁移，未设置时按 `auto` 处理。应用品牌、自定义入口名、命令与路径保持原样。
 
-更新源码后先重新部署；只拉取仓库不会改变已安装的插件。给英语观众演示前执行：
+更新源码后先重新部署；只拉取仓库不会改变已安装的插件。若升级后仍是旧布局，当前 Quickshell 可能保留旧 QML 缓存；保存工作后注销并重新登录桌面。安装器不会自动重启桌面。给英语观众演示前执行：
 
 ```bash
 ./omarchy-tools panel --replace
@@ -113,7 +141,7 @@ QoderWake 仅在点击后才尝试 `whoami`，需要时执行原生 `login`，�
 ~/.local/bin/anolisa-agent-entry register console "本地 Console" web 'http://127.0.0.1:19820'
 ```
 
-终端工作目录使用项目目录。GUI 如果通过 `gtk-launch` 启动，由应用决定是否恢复项目；项目目录不代表通用 GUI 打开项目协议。插件不是嵌入式终端或任务监控器。
+终端工作目录使用项目目录。GUI 如果通过 `gtk-launch` 启动，由应用决定是否恢复项目；项目目录不代表通用 GUI 打开项目协议。插件不嵌入终端；AW 工作台只显示上述只读摘要。
 
 GUI 聚焦依赖 `omarchy hyprland focus app`（Hyprland 专用），匹配类名取自桌面文件的 `StartupWMClass` 并按 `^…$` 锚定。找不到该命令、没有桌面文件或窗口不存在时，退回原本的启动行为。注意 Omarchy 4 的 Hyprland 0.56 使用 Lua 配置，传统 `hyprctl dispatch <子命令> <参数>` 会被当作 Lua 源码而失败，正确形式是 `hyprctl dispatch 'hl.dsp.focus({ window = "address:…" })'`；这也是任何外部脚本在本机上聚焦窗口的通用坑。
 
