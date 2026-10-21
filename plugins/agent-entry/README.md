@@ -1,13 +1,28 @@
 # Agent Entry · Omarchy 插件
 
+## 会话工作台 PoC（0.7）
+
+顶栏 AW 展开右侧紧凑管控面：组件与策略按需展开，Hook 链在策略内查看，底部入口始终可见。
+完整工作台按入口、双列组件与会话卡组织。两种视图保持在终端之上，移到终端不自动消失。
+“打开 AI Shell”进入 cosh，详情显示真实会话、固定策略版本与运行代次。
+cosh 是真正的 AI Shell；在其中运行 `aw run --agent qoder`，由 herdr 托管终端并经 AW 启动 Qoder。
+关闭窗口后可返回同一活进程与对话；Panel 的“返回”不会新建 Agent。
+新建用 `aw run --agent qoder`，继续已有会话用“返回”，不要重复 run。
+本机 CLI 名为 `qodercli`，不是 `qoder`；cosh 自身的 `/auth` 与 Qoder 登录独立。
+安装后首次执行 `aw-session setup` 配置 herdr 官方 Qoder 身份 Hook。
+“Hook 已绑定”来自存活进程、原生 Hook/binding 和在线 AW 实例的交叉核验；
+不等于 API adoption 已验证或每次调用均获准。VM 重启续接和热更新未启用。
+要求已安装 cosh、herdr、AW、Qoder，详见
+[使用、证据与边界](https://github.com/casparant/useful-omarchy-softwares/blob/main/docs/agent-control-plane-poc.md)。
+
 <!-- Modified 2026-10-19: bilingual UI, persisted language choice and English demonstration setup. -->
 
-通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.5.1**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
+通过 Quickshell 顶栏按钮展开 Agent 启动面板。界面使用 QML，操作由 Python 标准库脚本处理。当前版本 **0.7.0**，保留插件 ID `anolisa.agent-entry` 和原有配置位置，方便原型用户迁移。
 
 源码来自公开 ANOLISA 实验，采用 **Apache-2.0**；详见 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和固定版本的[来源与修改记录](ORIGIN.md)。本目录不适用仓库原创代码的 0BSD 许可。
 
 
-AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-core 的首次配置或日常 `aw run`。从仓库根目录执行 `./omarchy-tools aw` 可一次完成软件安装、面板部署与首次启动；后续点击 AW 工作台的「通过 AW 启动 Qoder」。Qoder CLI 卡片仍是原生直连入口。仅检测到入口不代表 Provider 已生效。
+现有 `/usr/bin/aw-launch` 继续提供 Tokenless/可选 sec-core 的首次配置或日常 `aw run`。从仓库根目录执行 `./omarchy-tools aw` 可一次完成软件安装、面板部署与首次启动；日常可从 cosh 终端执行 `aw run --agent qoder`。AW 状态区只提供查询与说明，Qoder CLI 卡片仍是原生直连入口。仅检测到入口不代表 Provider 已生效。
 
 ## AW 工作台与首次登录
 
@@ -19,13 +34,14 @@ AW 入口调用已安装的 `/usr/bin/aw-launch`，进入 Tokenless/可选 sec-c
 - **Tokenless**：展示存储中最近最多 200 条记录的压缩前后估算 token 数、减少数量和比例。
   这是组件历史统计，不是当前会话计费，也不代表全部模型上下文；无数据时显示「—」。
 - **sec-core**：分别展示策略是否配置/启用与后台是否认证可达；健康不代表准入或检查通过。
-- **最近活动**：展示当前 AW 后台实例最近步骤中的前 5 条。Tokenless 请求改写重试、
+- **最近活动**：受管会话详情展示其独立 AW 实例的最近 3 条步骤；旧软件目录展示默认实例的前 5 条。Tokenless 请求改写重试、
   安全策略阻断、异常阻断、完成观察与压缩完成分别标注；不显示工具命令、输出或凭据。
   「查看详情」仅展开同一份筛选后的展示数据。
 
 工作台识别预编译包和 `$XDG_CONFIG_HOME/aw/preview.yaml`（默认 `~/.config/aw/preview.yaml`）。
 显式覆盖 AW 启动命令时仍能启动，但不推断其状态。Qoder CLI 卡片为直接启动入口；
-需要 AW Hook 时使用工作台按钮，首次配置、目录信任与工具权限继续由终端和 Qoder 原生界面确认。
+需要托管和 AW Hook 时在 cosh 终端使用 `aw run --agent qoder`，首次配置、目录信任与工具权限继续由终端和 Qoder 原生界面确认。
+这由插件自身 cosh 的局部 Bash 适配实现，不替换系统 AW；普通终端保持原生行为。
 Tokenless 请求重试后的命令仍要经过安全检查与原生权限；不建议为演示全局放行 `env`。
 
 演示电脑无需访问内网仓库。安装需要公开 GitHub、Arch/Omarchy 软件源和 Qoder 公开下载服务；

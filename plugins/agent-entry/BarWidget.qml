@@ -8,18 +8,18 @@ Item {
     property string moduleName: "anolisa.agent-entry"
     property var settings: ({})
     readonly property bool vertical: bar ? bar.vertical : false
-    implicitWidth: vertical ? 28 : 112
+    implicitWidth: vertical ? 28 : 65
     implicitHeight: 28
 
     Rectangle {
         anchors.fill: parent
         radius: 7
-        color: hover.containsMouse ? "#344364" : "#25334d"
-        border.color: "#667bba"
+        color: hover.containsMouse ? "#344347" : "transparent"
+        border.color: hover.containsMouse ? "#617778" : "transparent"
         Text {
             anchors.centerIn: parent
-            text: root.vertical ? "A" : "✦  Agent Entry"
-            color: "#e9efff"
+            text: root.vertical ? "A" : "◈ AW"
+            color: "#d0dad7"
             font.pixelSize: 12
             font.bold: true
         }

@@ -59,3 +59,28 @@
 已进行源码、隔离测试、官方 manifest 校验与通用 QtQuick 离屏渲染/交互测试。未声明 Linux、Quickshell 宿主、Wayland、登录流程或任一架构实机测试通过。
 
 AW 集成增加独立的预编译包启动入口；成功请求启动后收起面板，让原生终端获得焦点。保留原生 Qoder 入口、配置和 Apache-2.0 许可。
+
+## 0.6.0 · Control plane PoC
+
+- Add a quiet compact panel and a detailed component view using existing read-only queries.
+- Project configured hook order and error actions without claiming native adoption.
+- Discover the actual cosh entry; reserve its herdr run view for later integration.
+- Remove Qoder launch from the AW status card; preserve native launch and security helpers.
+
+## 0.7.0 · Live cosh/herdr workspace
+
+- Add a dedicated herdr session with real cosh AI Shell and AW-managed Qoder terminals.
+- Freeze per-session configuration and verify native binding identity, complete hook steps and live PID ancestry.
+- Add compact session cards, native return actions and explicit unmanaged/unverified states.
+- Preserve native approval, authentication, external hooks and AW adoption=unverified.
+- Disable reboot/session restore in the dedicated profile; live detach/reattach is the tested scope.
+
+- Refine the compact control panel with a verified-session hook chain, expandable component/policy rows, and an explicit cosh AI Shell action.
+- Validate the real ARM64 desktop, native Qoder approval and unchanged live identity after closing/reopening the production cosh window.
+
+- Clarify new/resume/exit steps in the cosh banner and document the standard PoC flow and missing-command diagnosis.
+- Preserve the selected project when recreating a deleted AI Shell workspace from an existing window.
+
+- Unify daily launch as aw run --agent qoder inside the plugin cosh Bash backend; keep the native AW executable and argv, isolate the adapter from agent tools, and retain admin compatibility.
+- Apply the supplied workbench layout with live component/session cards; replace focus-dismiss and floating details with persistent overlays above pinned terminals.
+- Accept the host JSON payload for the details route and add manual overlay focus/screenshot acceptance.

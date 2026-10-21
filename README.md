@@ -19,7 +19,7 @@ cd useful-omarchy-softwares
 ./omarchy-tools aw
 ```
 
-自动下载固定版本的 x86_64 / ARM64 二进制，安装 Qoder CLI、AW 和面板，并继续首次配置与原生登录。无需 Rust 编译；保留正常安装确认和可选安全授权。之后在面板点击 **AW**。来源、要求和升级说明见 [AW 包说明](pkgbuilds/aw-preview/README.md)。
+自动下载固定版本的 x86_64 / ARM64 二进制，安装 Qoder CLI、AW 和面板，并继续首次配置与原生登录。无需 Rust 编译；保留正常安装确认和可选安全授权。日常托管从面板 **打开 cosh**，在 AI Shell 中执行 `aw run --agent qoder`；首次还需已安装 cosh/herdr 并由管理员完成 herdr 的 Qoder 身份 Hook 配置，见 [会话工作台说明](docs/agent-control-plane-poc.md)。来源、要求和升级说明见 [AW 包说明](pkgbuilds/aw-preview/README.md)。
 
 **一条命令装面板：**
 
@@ -87,6 +87,9 @@ git pull --ff-only
 完整来源、维护归属和验证状态见 [catalog.json](catalog.json)。`aarch64` 指 Linux ARM64；不会将 x86 软件改标为 ARM。GUI 两包目前没有确认官方 Linux ARM 产物。
 
 ## 桌面插件
+
+当前分支为 [Agent 管控面 PoC](docs/agent-control-plane-poc.md)：顶栏摘要 → 组件/Hook 详情，cosh 为交互入口，herdr 托管 Qoder 活会话并支持关闭窗口后返回；Panel 核验每个会话的原生 AW Hook 绑定。VM 重启续接与策略热更新留待后续。
+
 
 [plugins/](plugins/README.md)独立维护 Quickshell 插件。[Agent Entry](plugins/agent-entry/README.md)已从 ANOLISA 公开实验迁入，保留原 ID 和 Apache-2.0 许可，提供顶栏入口、应用/终端启动及安装说明。部署、检查和独立导出流程见插件目录；目标 Omarchy 会话仍待实机验收。
 

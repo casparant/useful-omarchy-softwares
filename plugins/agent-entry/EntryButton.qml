@@ -5,6 +5,7 @@ Button {
     id: control
     property bool accent: false
     property bool quiet: false
+    property color accentColor: "#8babf5"
     implicitHeight: 38
     leftPadding: 14
     rightPadding: 14
@@ -18,8 +19,8 @@ Button {
     }
     background: Rectangle {
         radius: 8
-        color: !control.enabled ? "#202a3b" : control.accent ? (control.hovered ? "#b3caff" : "#8babf5") : (control.hovered ? "#33435f" : (control.quiet ? "transparent" : "#28364e"))
+        color: !control.enabled ? "#202a3b" : control.accent ? (control.hovered ? Qt.lighter(control.accentColor, 1.15) : control.accentColor) : (control.hovered ? "#33435f" : (control.quiet ? "transparent" : "#28364e"))
         border.width: control.activeFocus ? 2 : 1
-        border.color: control.activeFocus ? "#c6d6ff" : (control.accent ? "#8babf5" : "#3b4a64")
+        border.color: control.activeFocus ? "#c6d6ff" : (control.accent ? control.accentColor : "#3b4a64")
     }
 }

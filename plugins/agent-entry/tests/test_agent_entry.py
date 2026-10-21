@@ -54,6 +54,25 @@ class EntryTest(unittest.TestCase):
             self.assertFalse(any(a["available"] for a in result["agents"]))
             spawn.assert_not_called()
 
+    def test_return_focuses_existing_session_instead_of_duplicate_attachment(self):
+        key = 'a' * 32
+        with patch.object(entry._workspace, 'snapshot', return_value={'sessions': [{'id': key, 'pid': 123}]}), patch.object(entry, 'focus_running', return_value=True) as focus, patch.object(entry, 'open_terminal') as terminal:
+            entry.return_session(key, self.temp.name)
+            self.assertTrue(entry.re.fullmatch(focus.call_args.args[0], 'anolisa-session-' + key))
+            terminal.assert_not_called()
+
+    def test_expired_return_never_opens_an_agent_or_window(self):
+        with patch.object(entry._workspace, 'snapshot', return_value={'sessions': []}), patch.object(entry, 'open_terminal') as terminal:
+            with self.assertRaises(ValueError):
+                entry.return_session('a' * 32, self.temp.name)
+            terminal.assert_not_called()
+
+    def test_existing_cosh_window_returns_to_ai_shell_without_launching_qoder(self):
+        with patch.object(entry, 'command_for', return_value=['/usr/bin/cosh']), patch.object(entry, 'focus_running', return_value=True), patch.object(entry._workspace, 'focus_shell') as home, patch.object(entry, 'open_terminal') as terminal:
+            entry.launch('cosh', self.temp.name)
+            home.assert_called_once_with(Path(self.temp.name).resolve())
+            terminal.assert_not_called()
+
     def test_argument_injection_is_not_shell(self) -> None:
         args = type(
             "Args",

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "anolisa.agent-entry",
   "name": "Agent Entry",
-  "version": "0.5.1",
-  "description": "AW read-only workbench, bilingual launcher and catalog install hand-off",
+  "version": "0.7.0",
+  "description": "cosh entry, herdr live sessions and verified per-session AW hook bindings",
   "kinds": [
     "bar-widget",
     "panel"
