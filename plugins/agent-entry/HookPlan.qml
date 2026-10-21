@@ -6,6 +6,8 @@ ColumnLayout {
     id: root
     property var plan: ({})
     property string language: "en"
+    property bool compact: false
+    property string evidence: ""
     function tr(zh, en) { return language === "zh" ? zh : en }
     function label(role) {
         var labels = {
@@ -17,11 +19,11 @@ ColumnLayout {
         }
         return labels[role] || labels.custom
     }
-    spacing: 10
+    spacing: compact ? 7 : 10
     Text { text: root.tr("Hook 链", "Hook chain"); font.pixelSize: 17; font.bold: true; color: "#ecebe4" }
     Text {
         Layout.fillWidth: true
-        text: root.tr("配置顺序 · 原生接入尚未确认", "Configured order · Native attachment unverified")
+        text: root.evidence || root.tr("配置顺序 · 原生接入尚未确认", "Configured order · Native attachment unverified")
         color: "#9ba9aa"; font.pixelSize: 12; wrapMode: Text.WordWrap
     }
     Repeater {
@@ -34,16 +36,31 @@ ColumnLayout {
                 text: (phase.event === "tool.before" ? root.tr("执行前", "Before tool") : root.tr("执行后", "After tool"))
                     + (phase.enabled ? "" : root.tr(" · 未启用", " · Disabled"))
                     + (phase.conditional ? root.tr(" · 按条件", " · Conditional") : "")
-                color: "#80c6bc"; font.pixelSize: 12; font.bold: true
+                color: "#aab7ff"; font.pixelSize: 12; font.bold: true
+            }
+            GridLayout {
+                visible: root.compact; Layout.fillWidth: true
+                columns: phase.steps.length === 1 ? 1 : 2
+                rowSpacing: 6; columnSpacing: 6
+                Repeater {
+                    model: root.compact ? phase.steps : []
+                    delegate: Rectangle {
+                        required property var modelData
+                        required property int index
+                        Layout.fillWidth: true; implicitHeight: 35; radius: 5
+                        color: "#1d2c47"; border.color: "#2a3650"
+                        Text { anchors.fill: parent; anchors.margins: 5; text: (index + 1) + ". " + root.label(modelData.role) + (modelData.enabled ? "" : root.tr(" · 关", " · Off")); color: "#e0e5df"; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; wrapMode: Text.WordWrap }
+                    }
+                }
             }
             Repeater {
-                model: phase.steps
+                model: root.compact ? [] : phase.steps
                 delegate: Rectangle {
                     required property var modelData
                     required property int index
                     Layout.fillWidth: true
                     implicitHeight: stepFields.implicitHeight + 14
-                    color: "#202a2e"; radius: 5
+                    color: "#1d2c47"; radius: 5
                     RowLayout {
                         id: stepFields
                         anchors.fill: parent; anchors.margins: 7

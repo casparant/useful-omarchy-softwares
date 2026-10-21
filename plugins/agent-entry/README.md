@@ -2,11 +2,13 @@
 
 ## 会话工作台 PoC（0.7）
 
-顶栏 AW 提供紧凑摘要，详情显示真实会话、固定策略版本与运行代次。
+顶栏 AW 展开右侧紧凑管控面：组件与策略按需展开，Hook 链在策略内查看，底部入口始终可见。
+完整工作台按入口、双列组件与会话卡组织。两种视图保持在终端之上，移到终端不自动消失。
+“打开 AI Shell”进入 cosh，详情显示真实会话、固定策略版本与运行代次。
 cosh 是真正的 AI Shell；在其中运行 `aw run --agent qoder`，由 herdr 托管终端并经 AW 启动 Qoder。
 关闭窗口后可返回同一活进程与对话；Panel 的“返回”不会新建 Agent。
-新建用 `aw run --agent qoder`，继续已有会话用“返回”。适配仅存在于插件的 cosh Bash 后台，
-保留显式 `--config`、native 选项和 `--` 后参数；普通终端保持原生 AW 行为。
+新建用 `aw run --agent qoder`，继续已有会话用“返回”，不要重复 run。
+本机 CLI 名为 `qodercli`，不是 `qoder`；cosh 自身的 `/auth` 与 Qoder 登录独立。
 安装后首次执行 `aw-session setup` 配置 herdr 官方 Qoder 身份 Hook。
 “Hook 已绑定”来自存活进程、原生 Hook/binding 和在线 AW 实例的交叉核验；
 不等于 API adoption 已验证或每次调用均获准。VM 重启续接和热更新未启用。
@@ -39,6 +41,7 @@ cosh 是真正的 AI Shell；在其中运行 `aw run --agent qoder`，由 herdr 
 工作台识别预编译包和 `$XDG_CONFIG_HOME/aw/preview.yaml`（默认 `~/.config/aw/preview.yaml`）。
 显式覆盖 AW 启动命令时仍能启动，但不推断其状态。Qoder CLI 卡片为直接启动入口；
 需要托管和 AW Hook 时在 cosh 终端使用 `aw run --agent qoder`，首次配置、目录信任与工具权限继续由终端和 Qoder 原生界面确认。
+这由插件自身 cosh 的局部 Bash 适配实现，不替换系统 AW；普通终端保持原生行为。
 Tokenless 请求重试后的命令仍要经过安全检查与原生权限；不建议为演示全局放行 `env`。
 
 演示电脑无需访问内网仓库。安装需要公开 GitHub、Arch/Omarchy 软件源和 Qoder 公开下载服务；

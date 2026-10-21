@@ -94,6 +94,29 @@ mise 的版本查询、下载重试或限流；这不表示 AW Hook 已执行。
 2026-10-21 本机对 `mise-versions.jdx.dev` 的正常 TLS 校验失败，属于独立网络信任问题；
 未关闭 TLS 校验、未导入未知证书。已安装工具的标准 POC 不需要这些版本查询。
 
+## 工作台与终端交互
+
+完整工作台按入口、双列组件卡和真实会话卡组织，窄屏改为单列；展开组件或会话
+详情不会切换到示例场景。参考页面的场景切换和样本数字不进入运行状态。
+紧凑管控面和完整工作台均使用 Overlay 层，置顶终端不会遮挡详情；焦点移到终端
+不再关闭组件。显式关闭或顶栏切换收起；完整工作台关闭后回到紧凑管控面。
+从完整工作台打开 cosh 或返回 Qoder 时切回右侧紧凑视图，方便继续操作终端。
+原生权限留在 Qoder，组件不截取或代答权限界面。
+
+## 紧凑管控面
+
+顶栏展开右侧只读管控面，依次显示 Tokenless、sec-core、策略与活会话，Hook 链在策略中展开。
+底部入口与详情按钮固定可见。组件和策略按需展开；“打开 AI Shell”进入 cosh，“返回”连接所选会话。
+恰有一个已绑定活会话时，展开的 Hook 链显示它的固定快照和版本；其他情况下明确
+显示默认配置顺序，不能把默认文件当成所有会话已采用的策略。多步骤按顺序换行展示。
+Tokenless 摘要标为组件历史估算，sec-core 后台健康与操作准入仍分开说明。
+详情保留各会话的项目、原生对话 ID、PID、版本、AW 代次、完整 Hook 异常动作和活动。
+
+2026-10-21 本机 ARM64 VM 实际验证了 Qoder 原生权限等待、单次允许及完成状态，
+以及关闭/重开真实 cosh 窗口前后同一 PID、对话、终端和 AW 身份不变。
+真实截图从 VM 的 Wayland 合成器直接采集；离屏 Qt 图片只用于布局回归。
+左侧仍为 herdr/cosh 和 Qoder 原生终端，不把概念图中的图形授权卡伪装成已实现功能。
+
 ## 生命周期和策略证据
 
 专用 herdr 会话名为 `anolisa-cosh`；不会连接用户的 default 或其他命名会话。
@@ -148,6 +171,8 @@ python3 -B -m unittest discover -s plugins/agent-entry/tests -v
 QT_QPA_PLATFORM=offscreen python3 plugins/agent-entry/tests/render_control.py .cache/workbench
 # 已有受管 Qoder 会话后，在 VM 桌面用户下显式运行；不请求模型或代答权限。
 python3 plugins/agent-entry/tests/live_herdr.py MANAGED_ID .cache/herdr-live/lifecycle.json
+# 已有 cosh 窗口：验证两种视图在终端重新聚焦后仍保持 Overlay，并采集真实截图。
+python3 plugins/agent-entry/tests/live_panel.py .cache/panel-live
 ```
 
 运行现场恢复脚本前先关闭目标会话已有的专用返回窗口，避免两个直接连接争夺输入。

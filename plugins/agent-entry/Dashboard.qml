@@ -3,7 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import "I18n.js" as I18n
 
 Item {
@@ -15,7 +14,9 @@ Item {
     property string statusError: ""
     property string actionError: ""
 
-    function open(payload) {
+    function open(payloadJson) {
+        var payload = ({})
+        try { payload = typeof payloadJson === "string" ? JSON.parse(payloadJson || "{}") : (payloadJson || ({})) } catch (e) {}
         root.close()
         if (payload && payload.view === "details") details.visible = true
         else popup.visible = true
@@ -73,7 +74,10 @@ Item {
         }
         stderr: StdioCollector { onStreamFinished: root.actionError = text }
         onExited: function(code, status) {
-            if (code === 0 && ["launch", "return-session"].includes(actionProcess.command[2])) root.close()
+            if (code === 0 && ["launch", "return-session"].includes(actionProcess.command[2])) {
+                if (window.visible) root.close()
+                else if (details.visible) { details.visible = false; popup.visible = true }
+            }
             if (code !== 0 && root.actionError) content.message = root.actionError
             refreshTimer.restart()
         }
@@ -88,16 +92,12 @@ Item {
         anchors { top: true; right: true }
         margins { top: 44; right: 12 }
         implicitWidth: Math.min(460, (screen ? screen.width : 480) - 24)
-        implicitHeight: Math.min(700, (screen ? screen.height : 780) - 80)
+        implicitHeight: Math.min(820, (screen ? screen.height : 900) - 80)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "anolisa-control-plane"
+        WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-        HyprlandFocusGrab {
-            active: popup.visible
-            windows: [popup]
-            onCleared: popup.visible = false
-        }
         ControlContent {
             anchors.fill: parent
             aw: content.aw; agents: content.agents; project: content.project
@@ -110,14 +110,16 @@ Item {
             onDetailsRequested: { popup.visible = false; details.visible = true }
         }
     }
-    FloatingWindow {
+    PanelWindow {
         id: details
         visible: false
-        title: "AW · Control plane"
-        implicitWidth: 880
-        implicitHeight: 840
-        minimumSize: Qt.size(540, 560)
-        color: "#151d21"
+        implicitWidth: Math.min(1000, (screen ? screen.width : 1080) - 64)
+        implicitHeight: Math.min(920, (screen ? screen.height : 1000) - 80)
+        color: "transparent"
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.namespace: "anolisa-workbench"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         ControlContent {
             anchors.fill: parent
             compact: false
@@ -127,7 +129,7 @@ Item {
             busy: statusProcess.running || actionProcess.running
             onActionRequested: function(args) { root.act(args) }
             onRefreshRequested: root.refresh()
-            onCloseRequested: details.visible = false
+            onCloseRequested: { details.visible = false; popup.visible = true }
             onCatalogRequested: { details.visible = false; window.visible = true }
         }
     }

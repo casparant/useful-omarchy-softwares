@@ -75,5 +75,12 @@ AW 集成增加独立的预编译包启动入口；成功请求启动后收起�
 - Preserve native approval, authentication, external hooks and AW adoption=unverified.
 - Disable reboot/session restore in the dedicated profile; live detach/reattach is the tested scope.
 
-- Route cosh-local `aw run` through managed sessions while preserving native arguments.
-- Focus the existing AI Shell and preserve its project without creating another agent.
+- Refine the compact control panel with a verified-session hook chain, expandable component/policy rows, and an explicit cosh AI Shell action.
+- Validate the real ARM64 desktop, native Qoder approval and unchanged live identity after closing/reopening the production cosh window.
+
+- Clarify new/resume/exit steps in the cosh banner and document the standard PoC flow and missing-command diagnosis.
+- Preserve the selected project when recreating a deleted AI Shell workspace from an existing window.
+
+- Unify daily launch as aw run --agent qoder inside the plugin cosh Bash backend; keep the native AW executable and argv, isolate the adapter from agent tools, and retain admin compatibility.
+- Apply the supplied workbench layout with live component/session cards; replace focus-dismiss and floating details with persistent overlays above pinned terminals.
+- Accept the host JSON payload for the details route and add manual overlay focus/screenshot acceptance.
