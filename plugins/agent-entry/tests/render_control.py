@@ -33,6 +33,13 @@ report = test.aw.project(fixture)
 report["hook_plan"] = test.aw.hook_plan(test.configuration(), "security", "tokenless")
 report["security"] = {"backend": "authenticated_reachable"}
 root.setProperty("aw", report)
+root.setProperty("runtime", {"state": "online", "updated": "12:06:18", "sessions": [
+    {"id": "a" * 32, "agent": "Qoder", "state": "blocked", "project": "/home/demo/project",
+     "policy": "bound", "revision": "a5f7dda46807", "pid": 1234, "pane": "w2:p1",
+     "conversation": "demo-conversation", "tokenless": {"enabled": True}, "security": {"enabled": True, "backend": "authenticated_reachable"}, "hook_plan": report["hook_plan"]},
+    {"id": "", "agent": "Qoder", "state": "unknown", "project": "/home/demo/other",
+     "policy": "unmanaged", "pid": 2345, "pane": ""},
+]})
 
 
 def find(name):
@@ -60,13 +67,11 @@ for language in ["en", "zh"]:
         root.setProperty("compact", compact)
         view.resize(width, height)
         QTest.qWait(150)
-        assert not find("controlRunView").property("enabled")
+        click("controlCosh")
+        assert actions.pop() == ["launch", "cosh", "--project", "/home/demo/project"]
         if compact:
             click("controlDetails")
             assert detail_requests and not actions
-        else:
-            click("controlCosh")
-            assert actions.pop() == ["launch", "cosh", "--project", "/home/demo/project"]
         find("controlScroll").property("contentItem").setProperty("contentY", 0)
         QTest.qWait(100)
         assert view.grabWindow().save(str(output / f"control-{language}-{width}.png"))
@@ -83,4 +88,4 @@ root.setProperty("busy", False)
 QTest.keyClick(view, Qt.Key_Escape)
 assert closed
 view.close()
-print("Control plane: bilingual compact/detail, narrow layout, cosh action, planned mode, stale data and Escape passed")
+print("Workbench: bilingual compact/detail, narrow layout, cosh action, bound/unmanaged sessions, stale data and Escape passed")

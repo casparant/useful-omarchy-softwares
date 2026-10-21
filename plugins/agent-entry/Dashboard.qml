@@ -43,19 +43,20 @@ Item {
                 try {
                     var result = JSON.parse(text)
                     if (result.language) content.language = result.language
-                    if (result.error) { content.aw = { state: "query_failed" }; content.message = result.error }
+                    if (result.error) { root.runtime = {state: "unavailable", sessions: []}; content.aw = { state: "query_failed" }; content.message = result.error }
                     else {
                         content.agents = result.agents
                         content.aw = result.aw
+                        root.runtime = result.runtime || ({state: "unavailable", sessions: []})
                         content.project = result.project
                         content.configPath = result.config
                     }
-                } catch (e) { content.aw = { state: "query_failed" }; content.message = I18n.text(content.language, "status_error") + String(e) }
+                } catch (e) { root.runtime = {state: "unavailable", sessions: []}; content.aw = { state: "query_failed" }; content.message = I18n.text(content.language, "status_error") + String(e) }
             }
         }
         stderr: StdioCollector { onStreamFinished: root.statusError = text }
         onExited: function(code, status) {
-            if (code !== 0) { content.aw = { state: "query_failed" }; content.message = root.statusError || I18n.text(content.language, "status_error") }
+            if (code !== 0) { root.runtime = {state: "unavailable", sessions: []}; content.aw = { state: "query_failed" }; content.message = root.statusError || I18n.text(content.language, "status_error") }
         }
     }
     Process {
@@ -72,13 +73,14 @@ Item {
         }
         stderr: StdioCollector { onStreamFinished: root.actionError = text }
         onExited: function(code, status) {
-            if (code === 0 && actionProcess.command[2] === "launch") root.close()
+            if (code === 0 && ["launch", "return-session"].includes(actionProcess.command[2])) root.close()
             if (code !== 0 && root.actionError) content.message = root.actionError
             refreshTimer.restart()
         }
     }
     Timer { interval: 5000; repeat: true; running: root.opened; onTriggered: root.refresh() }
     Timer { id: refreshTimer; interval: 200; onTriggered: root.refresh() }
+    property var runtime: ({state: "unavailable", sessions: []})
 
     PanelWindow {
         id: popup
@@ -86,7 +88,7 @@ Item {
         anchors { top: true; right: true }
         margins { top: 44; right: 12 }
         implicitWidth: Math.min(460, (screen ? screen.width : 480) - 24)
-        implicitHeight: Math.min(900, (screen ? screen.height : 980) - 80)
+        implicitHeight: Math.min(700, (screen ? screen.height : 780) - 80)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.namespace: "anolisa-control-plane"
@@ -99,6 +101,7 @@ Item {
         ControlContent {
             anchors.fill: parent
             aw: content.aw; agents: content.agents; project: content.project
+            runtime: root.runtime
             language: content.language; message: content.message
             busy: statusProcess.running || actionProcess.running
             onActionRequested: function(args) { root.act(args) }
@@ -119,6 +122,7 @@ Item {
             anchors.fill: parent
             compact: false
             aw: content.aw; agents: content.agents; project: content.project
+            runtime: root.runtime
             language: content.language; message: content.message
             busy: statusProcess.running || actionProcess.running
             onActionRequested: function(args) { root.act(args) }

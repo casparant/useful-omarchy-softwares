@@ -66,3 +66,14 @@ AW 集成增加独立的预编译包启动入口；成功请求启动后收起�
 - Project configured hook order and error actions without claiming native adoption.
 - Discover the actual cosh entry; reserve its herdr run view for later integration.
 - Remove Qoder launch from the AW status card; preserve native launch and security helpers.
+
+## 0.7.0 · Live cosh/herdr workspace
+
+- Add a dedicated herdr session with real cosh AI Shell and AW-managed Qoder terminals.
+- Freeze per-session configuration and verify native binding identity, complete hook steps and live PID ancestry.
+- Add compact session cards, native return actions and explicit unmanaged/unverified states.
+- Preserve native approval, authentication, external hooks and AW adoption=unverified.
+- Disable reboot/session restore in the dedicated profile; live detach/reattach is the tested scope.
+
+- Route cosh-local `aw run` through managed sessions while preserving native arguments.
+- Focus the existing AI Shell and preserve its project without creating another agent.

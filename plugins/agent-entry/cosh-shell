@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+# Apache-2.0; see LICENSE, NOTICE and ORIGIN.md.
+set -eu
+plugin_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+export PATH="$HOME/.local/bin:$PATH"
+if [[ -n ${ANOLISA_AW_SESSION:-} ]]; then
+    exec /usr/bin/python3 "$plugin_dir/workspace.py" run
+fi
+printf '\ncosh · AI Shell\n'
+printf '新建受管 Qoder（先 cd 到项目）：aw run --agent qoder\n'
+printf '恢复已有会话：Ctrl+B 后 W 选择 Qoder，或 Panel 返回；不要重复 run\n'
+printf '离开并保留会话：Ctrl+B 后 Q，或关闭窗口\n'
+printf '本 POC 不使用 qoder；qodercli 是原生直连入口。\n'
+printf 'cosh 的 /auth 仅配置自身 AI，与 Qoder 登录独立。\n\n'
+source "$plugin_dir/cosh-aw.bash"
+export COSH_SHELL_UPGRADE_CHECK=off
+exec /usr/bin/cosh

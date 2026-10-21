@@ -18,7 +18,7 @@ Item {
         border.color: hover.containsMouse ? "#617778" : "transparent"
         Text {
             anchors.centerIn: parent
-            text: root.vertical ? "A" : "◈ Agent"
+            text: root.vertical ? "A" : "◈ AW"
             color: "#d0dad7"
             font.pixelSize: 12
             font.bold: true

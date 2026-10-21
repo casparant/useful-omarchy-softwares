@@ -37,6 +37,10 @@ _aw_spec = importlib.util.spec_from_file_location("agent_entry_aw_status", ROOT 
 _aw = importlib.util.module_from_spec(_aw_spec)
 _aw_spec.loader.exec_module(_aw)
 
+_workspace_spec = importlib.util.spec_from_file_location("agent_entry_workspace", ROOT / "workspace.py")
+_workspace = importlib.util.module_from_spec(_workspace_spec)
+_workspace_spec.loader.exec_module(_workspace)
+
 
 def language_settings() -> dict[str, str]:
     """Read only the optional language field; never recurse through config errors."""
@@ -314,6 +318,7 @@ def snapshot() -> dict[str, Any]:
         **language_settings(),
         "agents": output,
         "aw": _aw.snapshot() if "argv" not in get_agent("aw") else _aw.empty("unsupported_launcher"),
+        "runtime": _workspace.snapshot(),
         "project": str(project_dir(None)),
         "config": str(config_path()),
         "note": tr("检测只确认启动入口，不读取凭据，也不代表已经登录或任务正在运行。", "Detection checks launchers only. It does not read credentials or confirm sign-in or running tasks."),
@@ -333,7 +338,7 @@ def detach(argv: list[str], cwd: Path | None = None) -> None:
     )
 
 
-def terminal_argv(payload: list[str], cwd: Path) -> list[str]:
+def terminal_argv(payload: list[str], cwd: Path, app_id: str = "anolisa-agent-terminal") -> list[str]:
     for name in ("foot", "kitty", "alacritty", "xterm"):
         binary = which(name)
         if not binary:
@@ -341,7 +346,7 @@ def terminal_argv(payload: list[str], cwd: Path) -> list[str]:
         if name == "foot":
             return [
                 binary,
-                "--app-id=anolisa-agent-terminal",
+                "--app-id=" + app_id,
                 "--title=ANOLISA · Terminal",
                 "--working-directory=" + str(cwd),
                 "-e",
@@ -349,18 +354,20 @@ def terminal_argv(payload: list[str], cwd: Path) -> list[str]:
         if name == "kitty":
             return [
                 binary,
-                "--class=anolisa-agent-terminal",
+                "--class=" + app_id,
                 "--title=ANOLISA · Terminal",
                 "--directory=" + str(cwd),
             ] + payload
         if name == "alacritty":
-            return [binary, "--working-directory", str(cwd), "-e"] + payload
-        return [binary, "-title", "ANOLISA · Terminal", "-e"] + payload
+            window = ["--class", app_id] if app_id != "anolisa-agent-terminal" else []
+            return [binary, "--working-directory", str(cwd)] + window + ["-e"] + payload
+        window = ["-class", app_id] if app_id != "anolisa-agent-terminal" else []
+        return [binary, "-title", "ANOLISA · Terminal"] + window + ["-e"] + payload
     raise ValueError(tr("没有找到 foot / kitty / alacritty / xterm 终端", "No supported terminal found (foot / kitty / alacritty / xterm)"))
 
 
-def open_terminal(payload: list[str], cwd: Path) -> None:
-    detach(terminal_argv(payload, cwd), cwd)
+def open_terminal(payload: list[str], cwd: Path, app_id: str = "anolisa-agent-terminal") -> None:
+    detach(terminal_argv(payload, cwd, app_id), cwd)
 
 
 def helper_payload(*args: str) -> list[str]:
@@ -433,7 +440,13 @@ def launch(agent_id: str, directory: str | None = None) -> str:
     if not argv:
         raise ValueError(item["name"] + tr(" 尚未发现启动入口，请安装或注册命令。", " has no launcher. Install the app or register its command."))
     if item["kind"] in ("terminal", "wake"):
-        open_terminal(helper_payload("session", agent_id, "--project", str(cwd)), cwd)
+        if agent_id == "cosh":
+            if focus_running("^anolisa-cosh$"):
+                _workspace.focus_shell(cwd)
+                return tr("已返回 cosh 窗口。", "Returned to the cosh window.")
+            open_terminal(helper_payload("session", agent_id, "--project", str(cwd)), cwd, app_id="anolisa-cosh")
+        else:
+            open_terminal(helper_payload("session", agent_id, "--project", str(cwd)), cwd)
     else:
         # A re-spawn hits the app's single-instance lock and exits without moving any window.
         pattern = desktop_window_class(argv)
@@ -456,6 +469,18 @@ def install(agent_id: str, directory: str | None = None) -> str:
     )
 
 
+def return_session(key: str, directory: str | None = None) -> str:
+    item = next((s for s in _workspace.snapshot()["sessions"] if s["id"] == key), None)
+    if not item or not item.get("pid"):
+        raise ValueError(tr("会话已退出或暂不可核验，没有新建 Qoder。", "Session exited or cannot be verified; no Qoder was started."))
+    window_class = "anolisa-session-" + item["id"]
+    if focus_running("^" + re.escape(window_class) + "$"):
+        return tr("已返回原会话窗口。", "Returned to the existing session window.")
+    open_terminal([sys.executable, str(ROOT / "workspace.py"), "attach", item["id"]],
+                  project_dir(directory), app_id=window_class)
+    return tr("正在返回原会话。", "Returning to the existing session.")
+
+
 def install_run(agent_id: str, directory: str | None) -> None:
     item = get_agent(agent_id)
     name = install_target(item)
@@ -471,6 +496,10 @@ def session(agent_id: str, directory: str | None) -> None:
     if not argv:
         raise ValueError(tr("启动命令不存在", "The launch command was not found"))
     cwd = project_dir(directory)
+    if agent_id == "cosh":
+        # cosh is a real AI Shell in the dedicated Herdr server, never a Qoder alias.
+        os.chdir(cwd)
+        os.execv(sys.executable, [sys.executable, str(ROOT / "workspace.py"), "open"])
     print("ANOLISA · " + item["name"] + tr("\n工作目录：", "\nProject folder: ") + str(cwd), flush=True)
     if item["kind"] == "wake":
         # Explicit action; no public listener, no login token reads, no stored credentials.
@@ -530,6 +559,9 @@ def main() -> int:
         p = sub.add_parser(action)
         p.add_argument("id")
         p.add_argument("--project")
+    p = sub.add_parser("return-session")
+    p.add_argument("id")
+    p.add_argument("--project")
     p = sub.add_parser("project")
     p.add_argument("directory")
     p = sub.add_parser("language")
@@ -548,6 +580,8 @@ def main() -> int:
             result = {"message": wait_for_shell("summon" if args.action == "open" else "toggle")}
         elif args.action == "launch":
             result = {"message": launch(args.id, args.project)}
+        elif args.action == "return-session":
+            result = {"message": return_session(args.id, args.project)}
         elif args.action == "session":
             session(args.id, args.project)
             result = {"message": tr("会话已结束", "Session ended")}

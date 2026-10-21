@@ -32,12 +32,12 @@ def trusted_file(path):
     return resolved
 
 
-def query(argv, timeout=6, limit=2 * 1024 * 1024):
+def query(argv, timeout=6, limit=2 * 1024 * 1024, env=None):
     """Cap time and output, suppress private stderr, and reap owned queries."""
     deadline = time.monotonic() + timeout
     with subprocess.Popen([str(arg) for arg in argv], stdin=subprocess.DEVNULL,
                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                          start_new_session=True) as process:
+                          start_new_session=True, env=env) as process:
         try:
             output = bytearray()
             with selectors.DefaultSelector() as selector:
@@ -228,8 +228,8 @@ def health(prefix, socket):
     return value['backend']
 
 
-def snapshot():
-    config = Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home() / '.config'))) / 'aw/preview.yaml'
+def snapshot(config=None):
+    config = config or Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home() / '.config'))) / 'aw/preview.yaml'
     if not AW.exists():
         return empty('not_installed')
     if not config.exists() and not config.is_symlink():
@@ -243,6 +243,8 @@ def snapshot():
         security_id, socket = security_transport(document, prefix)
         data = query([executable, 'inspect', '--config', config, '--json'])
         result = project(data, security_id)
+        result['revision'] = data.get('config_revision')
+        result['generation'] = data['service'].get('generation')
         tokenless_id = next((p['id'] for p in data['providers']
                              if p.get('implementation') == 'tokenless'), None)
         try:

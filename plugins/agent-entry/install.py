@@ -29,6 +29,9 @@ FILES = [
     "I18n.js",
     "agent_entry.py",
     "aw_status.py",
+    "workspace.py",
+    "cosh-shell",
+    "cosh-aw.bash",
     "i18n.py",
     "install.py",
     "LICENSE",
@@ -73,6 +76,8 @@ def main() -> None:
     backups = config / "anolisa/plugin-backups"
     launcher = Path.home() / ".local/bin/anolisa-agent-entry"
     desktop = Path.home() / ".local/share/applications/anolisa-agent-entry.desktop"
+    workspace_link = Path.home() / ".local/bin/aw-session"
+    workspace_desktop = Path.home() / ".local/share/applications/anolisa-cosh.desktop"
     autostart = shell_config / "hooks/post-boot.d/anolisa-agent-entry.sh"
     # Install entries need omarchy-tools on PATH. Derive it from this checkout instead of
     # baking a repository path into the plugin, and never take over someone else's file.
@@ -98,6 +103,10 @@ def main() -> None:
     if args.uninstall:
         run(["omarchy", "plugin", "disable", ID])
         paths = [target, launcher, desktop, autostart]
+        if workspace_link.is_symlink() and workspace_link.resolve() == (target / "workspace.py").resolve():
+            paths.append(workspace_link)
+        if workspace_desktop.is_file() and ("Exec=" + desktop_quote(str(launcher)) + " launch cosh") in workspace_desktop.read_text():
+            paths.append(workspace_desktop)
         backup = backups / ("removed-" + str(time.time_ns()))
         backup.mkdir(parents=True)
         for path in paths:
@@ -127,8 +136,23 @@ def main() -> None:
         shutil.copy2(SOURCE / name, target / name)
     helper = target / "agent_entry.py"
     helper.chmod(0o755)
+    (target / "workspace.py").chmod(0o755)
+    (target / "cosh-shell").chmod(0o755)
     launcher.parent.mkdir(parents=True, exist_ok=True)
     launcher.symlink_to(helper)
+    if workspace_link.is_symlink() and workspace_link.resolve() == (target / "workspace.py").resolve():
+        workspace_link.unlink()
+    if not workspace_link.exists() and not workspace_link.is_symlink():
+        workspace_link.symlink_to(target / "workspace.py")
+    else:
+        print("保留已有 aw-session；可通过插件目录 workspace.py 使用托管命令。")
+    if not workspace_desktop.exists():
+        workspace_desktop.parent.mkdir(parents=True, exist_ok=True)
+        workspace_desktop.write_text(
+            "[Desktop Entry]\nType=Application\nName=cosh\nName[zh_CN]=cosh · AI Shell\n"
+            "Exec=" + desktop_quote(str(launcher)) + " launch cosh\n"
+            "Icon=utilities-terminal\nTerminal=false\nCategories=Development;Utility;\n",
+            encoding="utf-8")
     desktop.parent.mkdir(parents=True, exist_ok=True)
     desktop_text = (
         "[Desktop Entry]\nType=Application\nName=Agent Entry\n"
